@@ -222,65 +222,65 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [students]);
 
   const updateFixedSchedule = (studentId: string, day: number, newTime: string) => {
-    // Get the old time for this day before updating
-    const student = students.find(s => s.id === studentId);
-    const oldSchedule = student?.fixedSchedule.find(fd => fd.day === day);
-    const oldTime = oldSchedule?.time;
-
     // Update student fixed schedule time
     setStudents(prev => prev.map(s => {
       if (s.id !== studentId) return s;
       return { ...s, fixedSchedule: s.fixedSchedule.map(fd => fd.day === day ? { ...fd, time: newTime } : fd) };
     }));
 
-    // Update upcoming sessions for next 30 days: adjust pending sessions on matching weekday
+    // Remove all future sessions for this student on this day and regenerate
     setSessions(prev => {
-      const nextSessions = [...prev];
       const now = new Date();
-      now.setHours(0,0,0,0);
+      now.setHours(0, 0, 0, 0);
 
-      for (let i = 0; i <= 30; i++) {
-        const date = new Date(now);
-        date.setDate(now.getDate() + i);
-        if (date.getDay() !== day) continue;
+      // Remove all future sessions for this student on this day
+      const filteredSessions = prev.filter(session => {
+        const sessionDate = new Date(session.dateTime);
+        sessionDate.setHours(0, 0, 0, 0);
+        const isFuture = sessionDate >= now;
+        const isSameDay = sessionDate.getDay() === day;
+        const isSameStudent = session.studentId === studentId;
+        const isPendingOrRescheduled = session.status === SessionStatus.PENDING || session.status === SessionStatus.RESCHEDULED;
 
-        const [hh, mm] = newTime.split(':').map(x => parseInt(x, 10));
-        const targetDate = new Date(date);
-        targetDate.setHours(hh, mm, 0, 0);
-        const targetISO = targetDate.toISOString();
+        return !(isFuture && isSameDay && isSameStudent && isPendingOrRescheduled);
+      });
 
-        // find pending session for this student on same date (by date part)
-        const dateStr = targetISO.split('T')[0];
+      // Regenerate sessions for this student on this day for next 30 days
+      const student = students.find(s => s.id === studentId);
+      if (student) {
+        const updatedStudent = { ...student, fixedSchedule: student.fixedSchedule.map(fd => fd.day === day ? { ...fd, time: newTime } : fd) };
+        const scheduleForDay = updatedStudent.fixedSchedule.find(fd => fd.day === day);
 
-        // Remove old sessions for this student on this day with old time
-        if (oldTime) {
-          const [oldHh, oldMm] = oldTime.split(':').map(x => parseInt(x, 10));
-          const oldDate = new Date(date);
-          oldDate.setHours(oldHh, oldMm, 0, 0);
-          const oldDateStr = oldDate.toISOString().split('T')[0];
-          const oldTimeStr = oldDate.toISOString();
+        if (scheduleForDay) {
+          for (let i = 0; i <= 30; i++) {
+            const date = new Date(now);
+            date.setDate(now.getDate() + i);
 
-          // Remove sessions that match the old time
-          const oldSessionIndex = nextSessions.findIndex(s =>
-            s.studentId === studentId &&
-            s.dateTime === oldTimeStr &&
-            (s.status === SessionStatus.PENDING || s.status === SessionStatus.RESCHEDULED)
-          );
-          if (oldSessionIndex >= 0) {
-            nextSessions.splice(oldSessionIndex, 1);
+            if (date.getDay() === day) {
+              const [hours, minutes] = scheduleForDay.time.split(':');
+              date.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+
+              const exists = filteredSessions.some(s =>
+                s.studentId === studentId &&
+                new Date(s.dateTime).getTime() === date.getTime()
+              );
+
+              if (!exists) {
+                filteredSessions.push({
+                  id: Math.random().toString(36).substr(2, 9),
+                  studentId: studentId,
+                  dateTime: date.toISOString(),
+                  duration: 60,
+                  price: updatedStudent.sessionPrice,
+                  status: SessionStatus.PENDING
+                });
+              }
+            }
           }
         }
-
-        const existingIndex = nextSessions.findIndex(s => s.studentId === studentId && s.dateTime.startsWith(dateStr) && (s.status === SessionStatus.PENDING || s.status === SessionStatus.RESCHEDULED));
-
-        if (existingIndex >= 0) {
-          // update its dateTime to new time
-          nextSessions[existingIndex] = { ...nextSessions[existingIndex], dateTime: targetISO };
-        }
-        // Don't create new sessions here - let generateSessionsForDateRange handle that
       }
 
-      return nextSessions.sort((a, b) => a.dateTime.localeCompare(b.dateTime));
+      return filteredSessions.sort((a, b) => a.dateTime.localeCompare(b.dateTime));
     });
   };
 

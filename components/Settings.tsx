@@ -32,7 +32,8 @@ const Settings: React.FC = () => {
 
   const handleExport = () => {
     const data = exportData();
-    const fileName = `tutor-backup-${new Date().toISOString().split('T')[0]}.json`;
+    const now = new Date();
+    const fileName = `tutor-backup-${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}-${now.getHours().toString().padStart(2,'0')}${now.getMinutes().toString().padStart(2,'0')}.json`;
 
     // Create download link for manual path selection
     const element = document.createElement('a');
@@ -42,8 +43,6 @@ const Settings: React.FC = () => {
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
-
-    alert('اختر المسار لحفظ النسخة الاحتياطية');
   };
 
   const handleImportClick = () => {
@@ -155,52 +154,6 @@ const Settings: React.FC = () => {
               </div>
             </button>
           </div>
-        </div>
-      </div>
-
-      {/* تخصيص الألوان */}
-      <div className="px-2 space-y-3">
-        <div className="glass-3d p-5 rounded-[2rem] border-white/5 space-y-4">
-          <div className="space-y-1">
-            <h3 className="text-sm font-black text-white">تخصيص الألوان</h3>
-            <p className="text-[11px] text-slate-500 font-bold">اختر لون كل عنصر منفرداً</p>
-          </div>
-
-          <div className="space-y-3">
-            {Object.entries(colorLabels).map(([key, label]) => (
-              <div key={key} className="space-y-2">
-                <label className="text-xs font-bold text-white">{label}</label>
-                <div className="flex gap-2">
-                  <select
-                    value={customColors[key as keyof typeof customColors]}
-                    onChange={(e) => setCustomColors({ [key]: e.target.value })}
-                    className="flex-1 bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-blue-500/50 transition-colors"
-                  >
-                    {colorOptions.map((color) => (
-                      <option key={color} value={color}>
-                        {color.toUpperCase()}
-                      </option>
-                    ))}
-                  </select>
-                  <div
-                    className="w-8 h-8 rounded-lg border-2 border-white/20"
-                    style={{ backgroundColor: customColors[key as keyof typeof customColors] }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <button
-            onClick={() => {
-              // Force re-render by updating state
-              setCustomColors({ ...customColors });
-              alert('تم تطبيق الألوان الجديدة!');
-            }}
-            className="w-full py-2 px-4 rounded-xl font-black text-sm text-white bg-purple-600/80 hover:bg-purple-600 border border-purple-400/30 transition-all"
-          >
-            تطبيق الألوان
-          </button>
         </div>
       </div>
 
@@ -316,7 +269,7 @@ const Settings: React.FC = () => {
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
-              حفظ النسخة الاحتياطية
+              تصفح واختر المسار
             </button>
 
             <button
