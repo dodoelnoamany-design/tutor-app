@@ -44,15 +44,15 @@ const Settings: React.FC = () => {
         return;
       }
 
-      // Use Capacitor Filesystem to save the file
+      // Use Capacitor Filesystem to save the file in Documents directory
       const result = await Filesystem.writeFile({
-        path: fileName,
+        path: `TutorMaster/${fileName}`,
         data: data,
-        directory: Directory.ExternalStorage,
+        directory: Directory.Documents,
         encoding: Encoding.UTF8,
       });
 
-      alert('تم حفظ النسخة الاحتياطية بنجاح في: ' + result.uri);
+      alert(`تم حفظ النسخة الاحتياطية بنجاح!\n\nالملف محفوظ في: مجلد الوثائق/TutorMaster/${fileName}\n\nيمكنك العثور عليه في مدير الملفات تحت مجلد "Documents" أو "الوثائق"`);
 
     } catch (error) {
       console.error('خطأ في حفظ النسخة الاحتياطية:', error);

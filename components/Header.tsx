@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../store';
 import { useSettings } from '../themeStore';
 
@@ -6,6 +6,84 @@ const Header: React.FC = () => {
   const { notifications, removeNotification } = useApp();
   const { notificationsEnabled, teacherProfile } = useSettings();
   const [showNotifications, setShowNotifications] = useState(false);
+  const [bellPosition, setBellPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const bellRef = useRef<HTMLDivElement>(null);
+
+  // Load bell position from localStorage
+  useEffect(() => {
+    const savedPosition = localStorage.getItem('bell_position');
+    if (savedPosition) {
+      setBellPosition(JSON.parse(savedPosition));
+    }
+  }, []);
+
+  // Save bell position to localStorage
+  const saveBellPosition = (position: { x: number; y: number }) => {
+    localStorage.setItem('bell_position', JSON.stringify(position));
+  };
+
+  // Handle drag start
+  const handleDragStart = (e: React.TouchEvent | React.MouseEvent) => {
+    setIsDragging(true);
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    setDragStart({ x: clientX - bellPosition.x, y: clientY - bellPosition.y });
+  };
+
+  // Handle drag move
+  const handleDragMove = (e: React.TouchEvent | React.MouseEvent) => {
+    if (!isDragging) return;
+    
+    e.preventDefault();
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    
+    const newX = clientX - dragStart.x;
+    const newY = clientY - dragStart.y;
+    
+    // Constrain to viewport
+    const constrainedX = Math.max(0, Math.min(window.innerWidth - 48, newX));
+    const constrainedY = Math.max(0, Math.min(window.innerHeight - 48, newY));
+    
+    setBellPosition({ x: constrainedX, y: constrainedY });
+  };
+
+  // Handle drag end
+  const handleDragEnd = () => {
+    setIsDragging(false);
+    saveBellPosition(bellPosition);
+  };
+
+  // Add global event listeners for drag
+  useEffect(() => {
+    const handleGlobalMove = (e: TouchEvent | MouseEvent) => {
+      if (isDragging) {
+        handleDragMove(e as any);
+      }
+    };
+
+    const handleGlobalEnd = () => {
+      if (isDragging) {
+        handleDragEnd();
+      }
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleGlobalMove);
+      document.addEventListener('touchmove', handleGlobalMove, { passive: false });
+      document.addEventListener('mouseup', handleGlobalEnd);
+      document.addEventListener('touchend', handleGlobalEnd);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleGlobalMove);
+      document.removeEventListener('touchmove', handleGlobalMove);
+      document.removeEventListener('mouseup', handleGlobalEnd);
+      document.removeEventListener('touchend', handleGlobalEnd);
+    };
+  }, [isDragging, dragStart, bellPosition]);
 
   return (
     <header className="sticky top-0 z-[60] px-4 py-4 backdrop-blur-xl border-b border-white/5">
@@ -58,10 +136,21 @@ const Header: React.FC = () => {
           )}
         </div>
         
-        <div className="absolute right-5 top-1/2 transform -translate-y-1/2 z-10">
+        {/* Draggable Notification Bell */}
+        <div 
+          ref={bellRef}
+          className="fixed z-[100] cursor-move select-none"
+          style={{ 
+            left: bellPosition.x, 
+            top: bellPosition.y,
+            touchAction: 'none'
+          }}
+          onMouseDown={handleDragStart}
+          onTouchStart={handleDragStart}
+        >
           <button 
             onClick={() => setShowNotifications(!showNotifications)}
-            className="w-12 h-12 rounded-2xl glass-3d flex items-center justify-center text-slate-400 hover:text-white transition-all hover:border-blue-500/30 relative hover:scale-105 transform duration-200"
+            className={`w-12 h-12 rounded-2xl glass-3d flex items-center justify-center text-slate-400 hover:text-white transition-all hover:border-blue-500/30 relative hover:scale-105 transform duration-200 ${isDragging ? 'scale-110' : ''}`}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
