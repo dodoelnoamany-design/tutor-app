@@ -58,10 +58,10 @@ const Header: React.FC = () => {
           )}
         </div>
         
-        <div className="relative">
+        <div className="absolute right-5 top-1/2 transform -translate-y-1/2 z-10">
           <button 
             onClick={() => setShowNotifications(!showNotifications)}
-            className="w-12 h-12 rounded-2xl glass-3d flex items-center justify-center text-slate-400 hover:text-white transition-all hover:border-blue-500/30 relative hover:scale-105 transform duration-200 mr-2"
+            className="w-12 h-12 rounded-2xl glass-3d flex items-center justify-center text-slate-400 hover:text-white transition-all hover:border-blue-500/30 relative hover:scale-105 transform duration-200"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />

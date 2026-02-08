@@ -228,13 +228,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { ...s, fixedSchedule: s.fixedSchedule.map(fd => fd.day === day ? { ...fd, time: newTime } : fd) };
     }));
 
-    // Remove all future sessions for this student on this day and regenerate
+    // Update existing future sessions for this student on this day instead of creating new ones
     setSessions(prev => {
       const now = new Date();
       now.setHours(0, 0, 0, 0);
 
-      // Remove all future sessions for this student on this day
-      const filteredSessions = prev.filter(session => {
+      return prev.map(session => {
         const sessionDate = new Date(session.dateTime);
         sessionDate.setHours(0, 0, 0, 0);
         const isFuture = sessionDate >= now;
@@ -242,45 +241,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const isSameStudent = session.studentId === studentId;
         const isPendingOrRescheduled = session.status === SessionStatus.PENDING || session.status === SessionStatus.RESCHEDULED;
 
-        return !(isFuture && isSameDay && isSameStudent && isPendingOrRescheduled);
-      });
+        if (isFuture && isSameDay && isSameStudent && isPendingOrRescheduled) {
+          // Update the existing session with new time
+          const [hours, minutes] = newTime.split(':');
+          const updatedDate = new Date(session.dateTime);
+          updatedDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
 
-      // Regenerate sessions for this student on this day for next 30 days
-      const student = students.find(s => s.id === studentId);
-      if (student) {
-        const updatedStudent = { ...student, fixedSchedule: student.fixedSchedule.map(fd => fd.day === day ? { ...fd, time: newTime } : fd) };
-        const scheduleForDay = updatedStudent.fixedSchedule.find(fd => fd.day === day);
-
-        if (scheduleForDay) {
-          for (let i = 0; i <= 30; i++) {
-            const date = new Date(now);
-            date.setDate(now.getDate() + i);
-
-            if (date.getDay() === day) {
-              const [hours, minutes] = scheduleForDay.time.split(':');
-              date.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-
-              const exists = filteredSessions.some(s =>
-                s.studentId === studentId &&
-                new Date(s.dateTime).getTime() === date.getTime()
-              );
-
-              if (!exists) {
-                filteredSessions.push({
-                  id: Math.random().toString(36).substr(2, 9),
-                  studentId: studentId,
-                  dateTime: date.toISOString(),
-                  duration: 60,
-                  price: updatedStudent.sessionPrice,
-                  status: SessionStatus.PENDING
-                });
-              }
-            }
-          }
+          return {
+            ...session,
+            dateTime: updatedDate.toISOString()
+          };
         }
-      }
 
-      return filteredSessions.sort((a, b) => a.dateTime.localeCompare(b.dateTime));
+        return session;
+      }).sort((a, b) => a.dateTime.localeCompare(b.dateTime));
     });
   };
 

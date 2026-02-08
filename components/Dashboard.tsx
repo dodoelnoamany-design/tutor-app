@@ -5,9 +5,10 @@ import { SessionStatus } from '../types';
 import DailySummaryModal from './DailySummaryModal';
 
 const Dashboard: React.FC<{ onNavigate: (tab: any) => void }> = ({ onNavigate }) => {
-  const { getStats, getDailyIncome, getStudentById, generateSessionsForDateRange, notifications, clearNotifications } = useApp();
+  const { getStats, getDailyIncome, getStudentById, generateSessionsForDateRange, notifications, clearNotifications, sessions } = useApp();
   const stats = getStats();
   const [showSummary, setShowSummary] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // العبارات التحفيزية الشاملة للمعلمين (30 عبارة لضمان التنوع اليومي)
   const motivationalQuotes = useMemo(() => [
@@ -61,12 +62,17 @@ const Dashboard: React.FC<{ onNavigate: (tab: any) => void }> = ({ onNavigate })
     generateSessionsForDateRange(14);
   }, [generateSessionsForDateRange]);
 
+  // Refresh stats when sessions change
+  useEffect(() => {
+    setRefreshKey(prev => prev + 1);
+  }, [sessions]);
+
   return (
     <div className="space-y-8 page-transition pb-20">
       {/* 3D Progress Card with Daily Inspiration */}
       <div className="relative group">
         <div className="absolute -inset-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 rounded-[2.5rem] blur-xl opacity-20 group-hover:opacity-40 transition duration-1000"></div>
-        <div className="relative bg-[#0f172a] rounded-[2.5rem] p-8 overflow-hidden border border-white/10 shadow-3xl">
+        <div className="relative bg-[#0f172a] rounded-[2.5rem] p-8 overflow-hidden border border-white/10 shadow-3xl" key={refreshKey}>
           <div className="absolute -top-12 -right-12 w-48 h-48 bg-blue-500/10 rounded-full blur-[60px]"></div>
           
           <div className="mb-8 relative z-10">

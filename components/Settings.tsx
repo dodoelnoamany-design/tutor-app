@@ -30,12 +30,35 @@ const Settings: React.FC = () => {
     text: 'لون النص'
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     const data = exportData();
     const now = new Date();
-    const fileName = `tutor-backup-${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}-${now.getHours().toString().padStart(2,'0')}${now.getMinutes().toString().padStart(2,'0')}.json`;
+    const fileName = `Backup_${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2,'0')}-${now.getDate().toString().padStart(2,'0')}_${now.getHours().toString().padStart(2,'0')}-${now.getMinutes().toString().padStart(2,'0')}.json`;
 
-    // Create download link for manual path selection
+    try {
+      // Try to use File System Access API if available (modern browsers)
+      if ('showSaveFilePicker' in window) {
+        const options = {
+          suggestedName: fileName,
+          types: [{
+            description: 'JSON Backup File',
+            accept: { 'application/json': ['.json'] }
+          }]
+        };
+
+        const fileHandle = await (window as any).showSaveFilePicker(options);
+        const writable = await fileHandle.createWritable();
+        await writable.write(data);
+        await writable.close();
+
+        alert('تم حفظ النسخة الاحتياطية بنجاح!');
+        return;
+      }
+    } catch (error) {
+      console.log('File System Access API not supported or user cancelled, falling back to download');
+    }
+
+    // Fallback to download method
     const element = document.createElement('a');
     element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(data));
     element.setAttribute('download', fileName);
@@ -43,6 +66,8 @@ const Settings: React.FC = () => {
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
+
+    alert('تم تحميل النسخة الاحتياطية. اختر المكان لحفظها.');
   };
 
   const handleImportClick = () => {
