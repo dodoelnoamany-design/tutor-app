@@ -265,14 +265,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createdAt: Date.now(),
     };
     setStudents(prev => [...prev, newStudent]);
-    // Trigger generation after state update
+    // Generate sessions for the new student only
+    setTimeout(() => generateSessionsForDateRange(30), 0);
   };
 
+  // Generate initial sessions only on first load
   useEffect(() => {
-    if (students.length > 0) {
-      generateSessionsForDateRange(30); // توليد حصص لمدة شهر تلقائياً
+    if (students.length > 0 && sessions.length === 0) {
+      generateSessionsForDateRange(30);
     }
-  }, [students, generateSessionsForDateRange]);
+  }, []); // Empty dependency array - only run once on mount
 
   const recordPayment = (studentId: string, amount: number) => {
     setStudents(prev => prev.map(s => s.id === studentId ? { ...s, paidAmount: s.paidAmount + amount } : s));

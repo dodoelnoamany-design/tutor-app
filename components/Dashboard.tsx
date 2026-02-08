@@ -5,7 +5,7 @@ import { SessionStatus } from '../types';
 import DailySummaryModal from './DailySummaryModal';
 
 const Dashboard: React.FC<{ onNavigate: (tab: any) => void }> = ({ onNavigate }) => {
-  const { getStats, getDailyIncome, getStudentById, generateSessionsForDateRange, notifications, clearNotifications, sessions } = useApp();
+  const { getStats, getDailyIncome, getStudentById, notifications, clearNotifications, sessions } = useApp();
   const stats = getStats();
   const [showSummary, setShowSummary] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -57,10 +57,6 @@ const Dashboard: React.FC<{ onNavigate: (tab: any) => void }> = ({ onNavigate })
     s.status === SessionStatus.COMPLETED || s.status === SessionStatus.RESCHEDULED
   ).length;
   const progressPercent = totalToday > 0 ? Math.round((completedToday / totalToday) * 100) : 0;
-
-  useEffect(() => {
-    generateSessionsForDateRange(14);
-  }, [generateSessionsForDateRange]);
 
   // Refresh stats when sessions change
   useEffect(() => {
