@@ -36,29 +36,91 @@ const Settings: React.FC = () => {
       const data = exportData();
       const fileName = `tutor-backup-${new Date().toISOString().split('T')[0]}.json`;
 
-      await Filesystem.writeFile({
-        path: fileName,
-        data: btoa(data),
-        directory: Directory.Documents,
-      });
-
-      alert(`تم حفظ النسخة الاحتياطية في مجلد الوثائق باسم: ${fileName}`);
+      // Try to save to Downloads folder first
+      try {
+        await Filesystem.writeFile({
+          path: fileName,
+          data: btoa(data),
+          directory: Directory.Downloads,
+        });
+        alert(`تم حفظ النسخة الاحتياطية في مجلد التحميلات باسم: ${fileName}`);
+      } catch (downloadsError) {
+        // Fallback to Documents folder
+        try {
+          await Filesystem.writeFile({
+            path: fileName,
+            data: btoa(data),
+            directory: Directory.Documents,
+          });
+          alert(`تم حفظ النسخة الاحتياطية في مجلد الوثائق باسم: ${fileName}`);
+        } catch (documentsError) {
+          // Final fallback to browser download
+          const element = document.createElement('a');
+          element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(data));
+          element.setAttribute('download', fileName);
+          element.style.display = 'none';
+          document.body.appendChild(element);
+          element.click();
+          document.body.removeChild(element);
+          alert('تم تحميل النسخة الاحتياطية. يرجى اختيار المسار يدوياً.');
+        }
+      }
     } catch (error) {
       console.error('خطأ في حفظ النسخة الاحتياطية:', error);
       // Fallback to browser download
       const data = exportData();
+      const fileName = `tutor-backup-${new Date().toISOString().split('T')[0]}.json`;
       const element = document.createElement('a');
       element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(data));
-      element.setAttribute('download', `tutor-backup-${new Date().toISOString().split('T')[0]}.json`);
+      element.setAttribute('download', fileName);
       element.style.display = 'none';
       document.body.appendChild(element);
       element.click();
       document.body.removeChild(element);
+      alert('تم تحميل النسخة الاحتياطية. يرجى اختيار المسار يدوياً.');
     }
   };
 
-  const handleImportClick = () => {
-    fileInputRef.current?.click();
+  const handleImportClick = async () => {
+    try {
+      // Try to read from Downloads folder first
+      const { Filesystem, Directory } = await import('@capacitor/filesystem');
+      const fileName = `tutor-backup-${new Date().toISOString().split('T')[0]}.json`;
+
+      try {
+        const file = await Filesystem.readFile({
+          path: fileName,
+          directory: Directory.Downloads,
+        });
+        const data = atob(file.data);
+        if (importData(data)) {
+          alert('تم استعادة النسخة الاحتياطية من مجلد التحميلات بنجاح!');
+        } else {
+          alert('فشل في استعادة النسخة الاحتياطية. الملف قد يكون تالفاً.');
+        }
+      } catch (downloadsError) {
+        // Try Documents folder
+        try {
+          const file = await Filesystem.readFile({
+            path: fileName,
+            directory: Directory.Documents,
+          });
+          const data = atob(file.data);
+          if (importData(data)) {
+            alert('تم استعادة النسخة الاحتياطية من مجلد الوثائق بنجاح!');
+          } else {
+            alert('فشل في استعادة النسخة الاحتياطية. الملف قد يكون تالفاً.');
+          }
+        } catch (documentsError) {
+          // Fallback to file input
+          fileInputRef.current?.click();
+        }
+      }
+    } catch (error) {
+      console.error('خطأ في قراءة النسخة الاحتياطية:', error);
+      // Fallback to file input
+      fileInputRef.current?.click();
+    }
   };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -323,7 +385,7 @@ const Settings: React.FC = () => {
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
-              تحميل النسخة الاحتياطية
+              حفظ النسخة الاحتياطية
             </button>
 
             <button
@@ -333,7 +395,7 @@ const Settings: React.FC = () => {
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
               </svg>
-              استيراد النسخة الاحتياطية
+              استعادة النسخة الاحتياطية
             </button>
 
             <input
