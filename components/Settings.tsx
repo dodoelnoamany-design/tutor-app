@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { useSettings } from '../themeStore';
 
 const Settings: React.FC = () => {
@@ -14,29 +14,47 @@ const Settings: React.FC = () => {
   } = useSettings();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [showTeacherProfile, setShowTeacherProfile] = useState(false);
 
   const colorOptions = [
-    { label: 'أزرق (افتراضي)', colors: { primary: '#3b82f6', secondary: '#1e40af', accent: '#f59e0b' } },
-    { label: 'أرجواني', colors: { primary: '#a855f7', secondary: '#7e22ce', accent: '#ec4899' } },
-    { label: 'أخضر', colors: { primary: '#10b981', secondary: '#059669', accent: '#f59e0b' } },
-    { label: 'أحمر', colors: { primary: '#ef4444', secondary: '#dc2626', accent: '#fbbf24' } },
-    { label: 'سماوي', colors: { primary: '#06b6d4', secondary: '#0891b2', accent: '#fbbf24' } },
-    { label: 'وردي', colors: { primary: '#ec4899', secondary: '#db2777', accent: '#a855f7' } },
-    { label: 'برتقالي', colors: { primary: '#f97316', secondary: '#ea580c', accent: '#fbbf24' } },
-    { label: 'أصفر', colors: { primary: '#eab308', secondary: '#ca8a04', accent: '#f97316' } },
-    { label: 'رمادي', colors: { primary: '#6b7280', secondary: '#4b5563', accent: '#9ca3af' } },
-    { label: 'أسود', colors: { primary: '#1f2937', secondary: '#111827', accent: '#6b7280' } },
+    '#3b82f6', '#a855f7', '#10b981', '#ef4444', '#06b6d4', '#ec4899', '#f97316', '#eab308', '#6b7280', '#1f2937',
+    '#1e40af', '#7e22ce', '#059669', '#dc2626', '#0891b2', '#db2777', '#ea580c', '#ca8a04', '#4b5563', '#111827',
+    '#f59e0b', '#fbbf24', '#9ca3af', '#374151', '#64748b', '#94a3b8', '#cbd5e1', '#f1f5f9', '#020617', '#0f172a'
   ];
 
-  const handleExport = () => {
-    const data = exportData();
-    const element = document.createElement('a');
-    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(data));
-    element.setAttribute('download', `tutor-backup-${new Date().toISOString().split('T')[0]}.json`);
-    element.style.display = 'none';
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
+  const colorLabels = {
+    primary: 'لون الأزرار الرئيسية',
+    secondary: 'لون الأزرار الثانوية',
+    accent: 'لون التأكيد',
+    background: 'لون الخلفية',
+    text: 'لون النص'
+  };
+
+  const handleExport = async () => {
+    try {
+      const { Filesystem, Directory } = await import('@capacitor/filesystem');
+      const data = exportData();
+      const fileName = `tutor-backup-${new Date().toISOString().split('T')[0]}.json`;
+
+      await Filesystem.writeFile({
+        path: fileName,
+        data: btoa(data),
+        directory: Directory.Documents,
+      });
+
+      alert(`تم حفظ النسخة الاحتياطية في مجلد الوثائق باسم: ${fileName}`);
+    } catch (error) {
+      console.error('خطأ في حفظ النسخة الاحتياطية:', error);
+      // Fallback to browser download
+      const data = exportData();
+      const element = document.createElement('a');
+      element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(data));
+      element.setAttribute('download', `tutor-backup-${new Date().toISOString().split('T')[0]}.json`);
+      element.style.display = 'none';
+      document.body.appendChild(element);
+      element.click();
+      document.body.removeChild(element);
+    }
   };
 
   const handleImportClick = () => {
@@ -156,29 +174,31 @@ const Settings: React.FC = () => {
         <div className="glass-3d p-5 rounded-[2rem] border-white/5 space-y-4">
           <div className="space-y-1">
             <h3 className="text-sm font-black text-white">تخصيص الألوان</h3>
-            <p className="text-[11px] text-slate-500 font-bold">اختر مجموعة ألوان مختلفة</p>
+            <p className="text-[11px] text-slate-500 font-bold">اختر لون كل عنصر منفرداً</p>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            {colorOptions.map((opt) => (
-              <button
-                key={opt.label}
-                onClick={() => setCustomColors(opt.colors)}
-                className="p-3 rounded-xl border-2 transition-all hover:border-white/30"
-                style={{
-                  borderColor: customColors.primary === opt.colors.primary ? opt.colors.primary : 'rgba(255,255,255,0.1)',
-                  backgroundColor: 'rgba(15, 23, 42, 0.5)',
-                }}
-              >
-                <div className="flex items-center gap-2">
-                  <div className="flex gap-1">
-                    <div className="w-3 h-3 rounded" style={{ backgroundColor: opt.colors.primary }} />
-                    <div className="w-3 h-3 rounded" style={{ backgroundColor: opt.colors.secondary }} />
-                    <div className="w-3 h-3 rounded" style={{ backgroundColor: opt.colors.accent }} />
-                  </div>
-                  <span className="text-[10px] font-black text-white">{opt.label}</span>
+          <div className="space-y-3">
+            {Object.entries(colorLabels).map(([key, label]) => (
+              <div key={key} className="space-y-2">
+                <label className="text-xs font-bold text-white">{label}</label>
+                <div className="flex gap-2">
+                  <select
+                    value={customColors[key as keyof typeof customColors]}
+                    onChange={(e) => setCustomColors({ [key]: e.target.value })}
+                    className="flex-1 bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-blue-500/50 transition-colors"
+                  >
+                    {colorOptions.map((color) => (
+                      <option key={color} value={color}>
+                        {color.toUpperCase()}
+                      </option>
+                    ))}
+                  </select>
+                  <div
+                    className="w-8 h-8 rounded-lg border-2 border-white/20"
+                    style={{ backgroundColor: customColors[key as keyof typeof customColors] }}
+                  />
                 </div>
-              </button>
+              </div>
             ))}
           </div>
 
@@ -186,7 +206,7 @@ const Settings: React.FC = () => {
             onClick={resetCustomColors}
             className="w-full py-2 px-4 rounded-xl font-black text-sm text-slate-300 bg-slate-800/50 hover:bg-slate-800 border border-white/10 transition-all"
           >
-            إعادة تعيين
+            إعادة تعيين الألوان
           </button>
         </div>
       </div>
@@ -195,23 +215,25 @@ const Settings: React.FC = () => {
       <div className="px-2 space-y-3">
         <div className="glass-3d p-5 rounded-[2rem] border-white/5 space-y-4">
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
+            <div className="flex items-center justify-between gap-4">
+              <div className="space-y-1 flex-1 min-w-0">
                 <h3 className="text-sm font-black text-white">الإشعارات</h3>
                 <p className="text-[10px] text-slate-500 font-bold">إشعارات قبل الحصة بـ {notificationOffsetMinutes} دقيقة</p>
               </div>
-              <button
-                onClick={() => setNotificationsEnabled(!notificationsEnabled)}
-                className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
-                  notificationsEnabled ? 'bg-emerald-600' : 'bg-slate-700'
-                }`}
-              >
-                <span
-                  className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
-                    notificationsEnabled ? 'translate-x-7' : 'translate-x-1'
+              <div className="flex-shrink-0">
+                <button
+                  onClick={() => setNotificationsEnabled(!notificationsEnabled)}
+                  className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
+                    notificationsEnabled ? 'bg-emerald-600' : 'bg-slate-700'
                   }`}
-                />
-              </button>
+                >
+                  <span
+                    className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
+                      notificationsEnabled ? 'translate-x-7' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
             </div>
 
             {notificationsEnabled && (
@@ -228,42 +250,46 @@ const Settings: React.FC = () => {
               </div>
             )}
 
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
+            <div className="flex items-center justify-between gap-4">
+              <div className="space-y-1 flex-1 min-w-0">
                 <h3 className="text-sm font-black text-white">إشعارات النظام</h3>
                 <p className="text-[10px] text-slate-500 font-bold">إشعارات في شريط الإشعارات</p>
               </div>
-              <button
-                onClick={() => setSystemNotificationsEnabled(!systemNotificationsEnabled)}
-                className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
-                  systemNotificationsEnabled ? 'bg-emerald-600' : 'bg-slate-700'
-                }`}
-              >
-                <span
-                  className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
-                    systemNotificationsEnabled ? 'translate-x-7' : 'translate-x-1'
+              <div className="flex-shrink-0">
+                <button
+                  onClick={() => setSystemNotificationsEnabled(!systemNotificationsEnabled)}
+                  className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
+                    systemNotificationsEnabled ? 'bg-emerald-600' : 'bg-slate-700'
                   }`}
-                />
-              </button>
+                >
+                  <span
+                    className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
+                      systemNotificationsEnabled ? 'translate-x-7' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
+            <div className="flex items-center justify-between gap-4">
+              <div className="space-y-1 flex-1 min-w-0">
                 <h3 className="text-sm font-black text-white">المؤثرات الصوتية</h3>
                 <p className="text-[10px] text-slate-500 font-bold">تشغيل أصوات خفيفة</p>
               </div>
-              <button
-                onClick={() => setSoundEnabled(!soundEnabled)}
-                className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
-                  soundEnabled ? 'bg-emerald-600' : 'bg-slate-700'
-                }`}
-              >
-                <span
-                  className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
+              <div className="flex-shrink-0">
+                <button
+                  onClick={() => setSoundEnabled(!soundEnabled)}
+                  className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
+                    soundEnabled ? 'bg-emerald-600' : 'bg-slate-700'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
                     soundEnabled ? 'translate-x-7' : 'translate-x-1'
                   }`}
                 />
-              </button>
+                </button>
+              </div>
             </div>
 
             {soundEnabled && (
@@ -378,113 +404,128 @@ const Settings: React.FC = () => {
       {/* ملف المعلم */}
       <div className="px-2 space-y-3">
         <div className="glass-3d p-5 rounded-[2rem] border-white/5 space-y-4">
-          <div className="space-y-1">
-            <h3 className="text-sm font-black text-white">ملف المعلم</h3>
-            <p className="text-[11px] text-slate-500 font-bold">معلوماتك الشخصية والمهنية</p>
-          </div>
+          <button
+            onClick={() => setShowTeacherProfile(!showTeacherProfile)}
+            className="w-full flex items-center justify-between text-left"
+          >
+            <div className="space-y-1">
+              <h3 className="text-sm font-black text-white">ملف المعلم</h3>
+              <p className="text-[11px] text-slate-500 font-bold">اضغط لعرض/إخفاء البيانات الشخصية</p>
+            </div>
+            <svg
+              className={`h-5 w-5 text-slate-400 transition-transform ${showTeacherProfile ? 'rotate-180' : ''}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
 
-          <div className="space-y-3">
-            {/* Avatar Section */}
-            <div className="space-y-2">
-              <label className="text-[11px] text-slate-400 font-bold">الصورة الشخصية</label>
-              <div className="flex items-center gap-4">
-                <div 
-                  onClick={handleAvatarClick}
-                  className="w-16 h-16 rounded-full bg-slate-700 border-2 border-dashed border-slate-500 flex items-center justify-center cursor-pointer hover:border-blue-400 transition-colors overflow-hidden"
-                >
-                  {teacherProfile.avatar ? (
-                    <img 
-                      src={teacherProfile.avatar} 
-                      alt="Avatar" 
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <svg className="h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  )}
-                </div>
-                <div className="flex-1">
-                  <button
+          {showTeacherProfile && (
+            <div className="space-y-3 border-t border-white/10 pt-4">
+              {/* Avatar Section */}
+              <div className="space-y-2">
+                <label className="text-[11px] text-slate-400 font-bold">الصورة الشخصية</label>
+                <div className="flex items-center gap-4">
+                  <div 
                     onClick={handleAvatarClick}
-                    className="w-full py-2 px-3 rounded-xl font-black text-sm text-blue-400 bg-blue-600/10 hover:bg-blue-600/20 border border-blue-600/30 transition-all"
+                    className="w-16 h-16 rounded-full bg-slate-700 border-2 border-dashed border-slate-500 flex items-center justify-center cursor-pointer hover:border-blue-400 transition-colors overflow-hidden"
                   >
-                    {teacherProfile.avatar ? 'تغيير الصورة' : 'اختيار صورة'}
-                  </button>
-                  {teacherProfile.avatar && (
+                    {teacherProfile.avatar ? (
+                      <img 
+                        src={teacherProfile.avatar} 
+                        alt="Avatar" 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <svg className="h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    )}
+                  </div>
+                  <div className="flex-1">
                     <button
-                      onClick={() => setTeacherProfile({ avatar: '' })}
-                      className="w-full mt-1 py-1 px-3 rounded-xl font-black text-xs text-red-400 bg-red-600/10 hover:bg-red-600/20 border border-red-600/30 transition-all"
+                      onClick={handleAvatarClick}
+                      className="w-full py-2 px-3 rounded-xl font-black text-sm text-blue-400 bg-blue-600/10 hover:bg-blue-600/20 border border-blue-600/30 transition-all"
                     >
-                      حذف الصورة
+                      {teacherProfile.avatar ? 'تغيير الصورة' : 'اختيار صورة'}
                     </button>
-                  )}
+                    {teacherProfile.avatar && (
+                      <button
+                        onClick={() => setTeacherProfile({ avatar: '' })}
+                        className="w-full mt-1 py-1 px-3 rounded-xl font-black text-xs text-red-400 bg-red-600/10 hover:bg-red-600/20 border border-red-600/30 transition-all"
+                      >
+                        حذف الصورة
+                      </button>
+                    )}
+                  </div>
                 </div>
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarSelect}
+                  className="hidden"
+                />
               </div>
-              <input
-                ref={avatarInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleAvatarSelect}
-                className="hidden"
-              />
-            </div>
 
-            <div className="space-y-2">
-              <label className="text-[11px] text-slate-400 font-bold">الاسم الكامل</label>
-              <input
-                type="text"
-                value={teacherProfile.name}
-                onChange={(e) => setTeacherProfile({ name: e.target.value })}
-                placeholder="أدخل اسمك الكامل"
-                className="w-full py-2 px-3 rounded-xl font-black text-sm text-white bg-slate-800/50 border border-white/10 focus:border-blue-400 focus:outline-none"
-              />
-            </div>
+              <div className="space-y-2">
+                <label className="text-[11px] text-slate-400 font-bold">الاسم الكامل</label>
+                <input
+                  type="text"
+                  value={teacherProfile.name}
+                  onChange={(e) => setTeacherProfile({ name: e.target.value })}
+                  placeholder="أدخل اسمك الكامل"
+                  className="w-full py-2 px-3 rounded-xl font-black text-sm text-white bg-slate-800/50 border border-white/10 focus:border-blue-400 focus:outline-none"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <label className="text-[11px] text-slate-400 font-bold">البريد الإلكتروني</label>
-              <input
-                type="email"
-                value={teacherProfile.email}
-                onChange={(e) => setTeacherProfile({ email: e.target.value })}
-                placeholder="example@email.com"
-                className="w-full py-2 px-3 rounded-xl font-black text-sm text-white bg-slate-800/50 border border-white/10 focus:border-blue-400 focus:outline-none"
-              />
-            </div>
+              <div className="space-y-2">
+                <label className="text-[11px] text-slate-400 font-bold">البريد الإلكتروني</label>
+                <input
+                  type="email"
+                  value={teacherProfile.email}
+                  onChange={(e) => setTeacherProfile({ email: e.target.value })}
+                  placeholder="example@email.com"
+                  className="w-full py-2 px-3 rounded-xl font-black text-sm text-white bg-slate-800/50 border border-white/10 focus:border-blue-400 focus:outline-none"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <label className="text-[11px] text-slate-400 font-bold">رقم الهاتف</label>
-              <input
-                type="tel"
-                value={teacherProfile.phone}
-                onChange={(e) => setTeacherProfile({ phone: e.target.value })}
-                placeholder="+966 50 000 0000"
-                className="w-full py-2 px-3 rounded-xl font-black text-sm text-white bg-slate-800/50 border border-white/10 focus:border-blue-400 focus:outline-none"
-              />
-            </div>
+              <div className="space-y-2">
+                <label className="text-[11px] text-slate-400 font-bold">رقم الهاتف</label>
+                <input
+                  type="tel"
+                  value={teacherProfile.phone}
+                  onChange={(e) => setTeacherProfile({ phone: e.target.value })}
+                  placeholder="+966 50 000 0000"
+                  className="w-full py-2 px-3 rounded-xl font-black text-sm text-white bg-slate-800/50 border border-white/10 focus:border-blue-400 focus:outline-none"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <label className="text-[11px] text-slate-400 font-bold">التخصص</label>
-              <input
-                type="text"
-                value={teacherProfile.specialization}
-                onChange={(e) => setTeacherProfile({ specialization: e.target.value })}
-                placeholder="مثال: رياضيات، فيزياء، لغة عربية..."
-                className="w-full py-2 px-3 rounded-xl font-black text-sm text-white bg-slate-800/50 border border-white/10 focus:border-blue-400 focus:outline-none"
-              />
-            </div>
+              <div className="space-y-2">
+                <label className="text-[11px] text-slate-400 font-bold">التخصص</label>
+                <input
+                  type="text"
+                  value={teacherProfile.specialization}
+                  onChange={(e) => setTeacherProfile({ specialization: e.target.value })}
+                  placeholder="مثال: رياضيات، فيزياء، لغة عربية..."
+                  className="w-full py-2 px-3 rounded-xl font-black text-sm text-white bg-slate-800/50 border border-white/10 focus:border-blue-400 focus:outline-none"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <label className="text-[11px] text-slate-400 font-bold">نبذة تعريفية</label>
-              <textarea
-                value={teacherProfile.bio}
-                onChange={(e) => setTeacherProfile({ bio: e.target.value })}
-                placeholder="اكتب نبذة قصيرة عن نفسك وخبراتك..."
-                rows={3}
-                className="w-full py-2 px-3 rounded-xl font-black text-sm text-white bg-slate-800/50 border border-white/10 focus:border-blue-400 focus:outline-none resize-none"
-              />
+              <div className="space-y-2">
+                <label className="text-[11px] text-slate-400 font-bold">نبذة تعريفية</label>
+                <textarea
+                  value={teacherProfile.bio}
+                  onChange={(e) => setTeacherProfile({ bio: e.target.value })}
+                  placeholder="اكتب نبذة قصيرة عن نفسك وخبراتك..."
+                  rows={3}
+                  className="w-full py-2 px-3 rounded-xl font-black text-sm text-white bg-slate-800/50 border border-white/10 focus:border-blue-400 focus:outline-none resize-none"
+                />
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 

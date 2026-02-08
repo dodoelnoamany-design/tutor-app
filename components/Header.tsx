@@ -11,41 +11,50 @@ const Header: React.FC = () => {
     <header className="sticky top-0 z-[60] px-4 py-4 backdrop-blur-xl border-b border-white/5">
       <div className="max-w-md mx-auto flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="relative group">
-            <div className="absolute -inset-1 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-2xl blur-md opacity-40 group-hover:opacity-100 transition duration-500"></div>
-            <div className="relative w-12 h-12 bg-slate-900 border border-white/10 rounded-2xl flex items-center justify-center rotate-[-4deg] group-hover:rotate-0 transition-transform shadow-2xl">
-              <span className="text-blue-500 font-black text-lg drop-shadow-[0_0_8px_rgba(59,130,246,0.6)]">T.M</span>
-            </div>
-          </div>
-          <div className="flex flex-col">
-            <h1 className="text-xl font-black text-white leading-tight tracking-tight">مدير الدروس</h1>
-            <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_#10b981]"></span>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">الوضع الذكي نشط</p>
-            </span>
-          </div>
-          {teacherProfile.name && (
-            <div className="flex items-center gap-3 ml-4 pl-4 border-l border-white/10">
-              {teacherProfile.avatar ? (
-                <img 
-                  src={teacherProfile.avatar} 
-                  alt={teacherProfile.name}
-                  className="w-10 h-10 rounded-xl border-2 border-blue-500/30 shadow-lg"
-                />
-              ) : (
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center border-2 border-white/20 shadow-lg">
-                  <span className="text-white font-black text-sm">
-                    {teacherProfile.name.charAt(0).toUpperCase()}
-                  </span>
+          {teacherProfile.name || teacherProfile.avatar ? (
+            <>
+              <div className="relative group">
+                <div className="absolute -inset-1 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-2xl blur-md opacity-40 group-hover:opacity-100 transition duration-500"></div>
+                <div className="relative w-12 h-12 bg-slate-900 border border-white/10 rounded-2xl flex items-center justify-center rotate-[-4deg] group-hover:rotate-0 transition-transform shadow-2xl">
+                  {teacherProfile.avatar ? (
+                    <img 
+                      src={teacherProfile.avatar} 
+                      alt={teacherProfile.name}
+                      className="w-full h-full rounded-xl object-cover"
+                    />
+                  ) : (
+                    <span className="text-blue-500 font-black text-lg drop-shadow-[0_0_8px_rgba(59,130,246,0.6)]">
+                      {teacherProfile.name.charAt(0).toUpperCase()}
+                    </span>
+                  )}
                 </div>
-              )}
-              <div className="flex flex-col">
-                <span className="text-sm font-bold text-white">{teacherProfile.name}</span>
-                {teacherProfile.subject && (
-                  <span className="text-[10px] text-slate-400 font-medium">{teacherProfile.subject}</span>
-                )}
               </div>
-            </div>
+              <div className="flex flex-col">
+                <h1 className="text-xl font-black text-white leading-tight tracking-tight">
+                  أهلاً بك يا {teacherProfile.name}
+                </h1>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_#10b981]"></span>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">الوضع الذكي نشط</p>
+                </span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="relative group">
+                <div className="absolute -inset-1 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-2xl blur-md opacity-40 group-hover:opacity-100 transition duration-500"></div>
+                <div className="relative w-12 h-12 bg-slate-900 border border-white/10 rounded-2xl flex items-center justify-center rotate-[-4deg] group-hover:rotate-0 transition-transform shadow-2xl">
+                  <span className="text-blue-500 font-black text-lg drop-shadow-[0_0_8px_rgba(59,130,246,0.6)]">T.M</span>
+                </div>
+              </div>
+              <div className="flex flex-col">
+                <h1 className="text-xl font-black text-white leading-tight tracking-tight">مدير الدروس</h1>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_#10b981]"></span>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">الوضع الذكي نشط</p>
+                </span>
+              </div>
+            </>
           )}
         </div>
         

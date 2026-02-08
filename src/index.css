@@ -4,3 +4,93 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Mobile-first responsive design - Portrait mode optimization */
+@media (orientation: portrait) {
+  /* Ensure proper spacing and sizing for portrait mode */
+  .page-transition {
+    padding-bottom: 6rem; /* Account for bottom nav */
+  }
+
+  /* Optimize text sizes for portrait */
+  .glass-3d {
+    margin: 0 0.5rem;
+  }
+
+  /* Better button spacing in portrait */
+  .space-y-3 > * + * {
+    margin-top: 0.75rem;
+  }
+
+  /* Optimize input heights for touch */
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="number"],
+  input[type="time"],
+  select,
+  textarea {
+    min-height: 44px; /* iOS touch target minimum */
+  }
+
+  /* Better modal sizing for portrait */
+  .max-w-md {
+    max-width: calc(100vw - 2rem);
+  }
+}
+
+/* Landscape mode adjustments */
+@media (orientation: landscape) and (max-height: 500px) {
+  /* Compact layout for landscape on small screens */
+  .page-transition {
+    padding-bottom: 4rem;
+  }
+
+  .glass-3d {
+    margin: 0 0.25rem;
+  }
+
+  /* Smaller text in landscape */
+  h1 {
+    font-size: 1.25rem;
+  }
+
+  h3 {
+    font-size: 0.75rem;
+  }
+
+  p {
+    font-size: 0.625rem;
+  }
+}
+
+/* Hide scrollbar in mobile */
+html {
+  -webkit-overflow-scrolling: touch;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Better touch targets */
+button,
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
+/* Prevent zoom on input focus on iOS */
+@media screen and (max-width: 767px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="number"],
+  input[type="time"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}

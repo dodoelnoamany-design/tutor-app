@@ -96,7 +96,7 @@ const AppointmentsSchedule: React.FC = () => {
             </svg>
           </button>
           {showZoomMenu && (
-            <div className="absolute top-12 right-0 bg-slate-900 border border-white/10 rounded-xl shadow-2xl p-3 space-y-2 z-50 min-w-[200px]">
+            <div className="absolute top-12 left-0 bg-slate-900 border border-white/10 rounded-xl shadow-2xl p-3 space-y-2 z-50 min-w-[200px]">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-[11px] font-black text-slate-300">التصغير/التكبير</span>
                 <span className="text-[10px] font-black text-blue-400">{(scheduleZoom * 100).toFixed(0)}%</span>

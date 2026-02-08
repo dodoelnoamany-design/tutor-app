@@ -222,6 +222,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [students]);
 
   const updateFixedSchedule = (studentId: string, day: number, newTime: string) => {
+    // Get the old time for this day before updating
+    const student = students.find(s => s.id === studentId);
+    const oldSchedule = student?.fixedSchedule.find(fd => fd.day === day);
+    const oldTime = oldSchedule?.time;
+
     // Update student fixed schedule time
     setStudents(prev => prev.map(s => {
       if (s.id !== studentId) return s;
@@ -233,6 +238,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const nextSessions = [...prev];
       const now = new Date();
       now.setHours(0,0,0,0);
+
       for (let i = 0; i <= 30; i++) {
         const date = new Date(now);
         date.setDate(now.getDate() + i);
@@ -245,6 +251,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         // find pending session for this student on same date (by date part)
         const dateStr = targetISO.split('T')[0];
+
+        // Remove old sessions for this student on this day with old time
+        if (oldTime) {
+          const [oldHh, oldMm] = oldTime.split(':').map(x => parseInt(x, 10));
+          const oldDate = new Date(date);
+          oldDate.setHours(oldHh, oldMm, 0, 0);
+          const oldDateStr = oldDate.toISOString().split('T')[0];
+          const oldTimeStr = oldDate.toISOString();
+
+          // Remove sessions that match the old time
+          const oldSessionIndex = nextSessions.findIndex(s =>
+            s.studentId === studentId &&
+            s.dateTime === oldTimeStr &&
+            (s.status === SessionStatus.PENDING || s.status === SessionStatus.RESCHEDULED)
+          );
+          if (oldSessionIndex >= 0) {
+            nextSessions.splice(oldSessionIndex, 1);
+          }
+        }
+
         const existingIndex = nextSessions.findIndex(s => s.studentId === studentId && s.dateTime.startsWith(dateStr) && (s.status === SessionStatus.PENDING || s.status === SessionStatus.RESCHEDULED));
 
         if (existingIndex >= 0) {

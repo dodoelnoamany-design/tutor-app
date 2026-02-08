@@ -296,21 +296,25 @@ const SchoolSchedule: React.FC = () => {
                 <option key={d.index} value={d.index}>{d.name}</option>
               ))}
             </select>
-            <div className="grid grid-cols-2 gap-2">
-              <input
-                type="time"
-                value={formData.time}
-                onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                className="bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-blue-500/50 transition-colors"
-                placeholder="البداية"
-              />
-              <input
-                type="time"
-                value={formData.endTime || ''}
-                onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                className="bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-blue-500/50 transition-colors"
-                placeholder="النهاية"
-              />
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-400">من الساعة</label>
+                <input
+                  type="time"
+                  value={formData.time}
+                  onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                  className="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-blue-500/50 transition-colors"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-400">إلى الساعة</label>
+                <input
+                  type="time"
+                  value={formData.endTime || ''}
+                  onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                  className="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-blue-500/50 transition-colors"
+                />
+              </div>
             </div>
           </div>
 
