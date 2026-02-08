@@ -4,7 +4,7 @@ import { useSettings } from '../themeStore';
 
 const Header: React.FC = () => {
   const { notifications, removeNotification } = useApp();
-  const { notificationsEnabled } = useSettings();
+  const { notificationsEnabled, teacherProfile } = useSettings();
   const [showNotifications, setShowNotifications] = useState(false);
 
   return (
@@ -24,6 +24,29 @@ const Header: React.FC = () => {
               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">الوضع الذكي نشط</p>
             </span>
           </div>
+          {teacherProfile.name && (
+            <div className="flex items-center gap-3 ml-4 pl-4 border-l border-white/10">
+              {teacherProfile.avatar ? (
+                <img 
+                  src={teacherProfile.avatar} 
+                  alt={teacherProfile.name}
+                  className="w-10 h-10 rounded-xl border-2 border-blue-500/30 shadow-lg"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center border-2 border-white/20 shadow-lg">
+                  <span className="text-white font-black text-sm">
+                    {teacherProfile.name.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+              )}
+              <div className="flex flex-col">
+                <span className="text-sm font-bold text-white">{teacherProfile.name}</span>
+                {teacherProfile.subject && (
+                  <span className="text-[10px] text-slate-400 font-medium">{teacherProfile.subject}</span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
         
         <div className="relative">

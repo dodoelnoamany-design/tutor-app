@@ -4,10 +4,16 @@ import { useSettings } from '../themeStore';
 const Settings: React.FC = () => {
   const {
     theme, setTheme, soundEnabled, setSoundEnabled, notificationsEnabled, setNotificationsEnabled,
+    systemNotificationsEnabled, setSystemNotificationsEnabled,
+    notificationOffsetMinutes, setNotificationOffsetMinutes,
+    autoBackupDays, setAutoBackupDays,
+    autoBackupPath, setAutoBackupPath,
     customColors, setCustomColors, resetCustomColors,
+    teacherProfile, setTeacherProfile,
     exportData, importData, resetToDefaults
   } = useSettings();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const colorOptions = [
     { label: 'أزرق (افتراضي)', colors: { primary: '#3b82f6', secondary: '#1e40af', accent: '#f59e0b' } },
@@ -15,6 +21,11 @@ const Settings: React.FC = () => {
     { label: 'أخضر', colors: { primary: '#10b981', secondary: '#059669', accent: '#f59e0b' } },
     { label: 'أحمر', colors: { primary: '#ef4444', secondary: '#dc2626', accent: '#fbbf24' } },
     { label: 'سماوي', colors: { primary: '#06b6d4', secondary: '#0891b2', accent: '#fbbf24' } },
+    { label: 'وردي', colors: { primary: '#ec4899', secondary: '#db2777', accent: '#a855f7' } },
+    { label: 'برتقالي', colors: { primary: '#f97316', secondary: '#ea580c', accent: '#fbbf24' } },
+    { label: 'أصفر', colors: { primary: '#eab308', secondary: '#ca8a04', accent: '#f97316' } },
+    { label: 'رمادي', colors: { primary: '#6b7280', secondary: '#4b5563', accent: '#9ca3af' } },
+    { label: 'أسود', colors: { primary: '#1f2937', secondary: '#111827', accent: '#6b7280' } },
   ];
 
   const handleExport = () => {
@@ -46,6 +57,28 @@ const Settings: React.FC = () => {
       }
     };
     reader.readAsText(file);
+  };
+
+  const handleAvatarClick = () => {
+    avatarInputRef.current?.click();
+  };
+
+  const handleAvatarSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Check file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      alert('حجم الصورة يجب أن يكون أقل من 2 ميجابايت');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      setTeacherProfile({ avatar: result });
+    };
+    reader.readAsDataURL(file);
   };
 
   const playSound = () => {
@@ -165,7 +198,7 @@ const Settings: React.FC = () => {
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <h3 className="text-sm font-black text-white">الإشعارات</h3>
-                <p className="text-[10px] text-slate-500 font-bold">إشعارات قبل الحصة بـ 10 دقائق</p>
+                <p className="text-[10px] text-slate-500 font-bold">إشعارات قبل الحصة بـ {notificationOffsetMinutes} دقيقة</p>
               </div>
               <button
                 onClick={() => setNotificationsEnabled(!notificationsEnabled)}
@@ -176,6 +209,39 @@ const Settings: React.FC = () => {
                 <span
                   className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
                     notificationsEnabled ? 'translate-x-7' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {notificationsEnabled && (
+              <div className="space-y-2">
+                <label className="text-[11px] text-slate-400 font-bold">وقت الإشعار (دقائق قبل الحصة)</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="60"
+                  value={notificationOffsetMinutes}
+                  onChange={(e) => setNotificationOffsetMinutes(parseInt(e.target.value, 10))}
+                  className="w-full py-2 px-3 rounded-xl font-black text-sm text-white bg-slate-800/50 border border-white/10 focus:border-blue-400 focus:outline-none"
+                />
+              </div>
+            )}
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <h3 className="text-sm font-black text-white">إشعارات النظام</h3>
+                <p className="text-[10px] text-slate-500 font-bold">إشعارات في شريط الإشعارات</p>
+              </div>
+              <button
+                onClick={() => setSystemNotificationsEnabled(!systemNotificationsEnabled)}
+                className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
+                  systemNotificationsEnabled ? 'bg-emerald-600' : 'bg-slate-700'
+                }`}
+              >
+                <span
+                  className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
+                    systemNotificationsEnabled ? 'translate-x-7' : 'translate-x-1'
                   }`}
                 />
               </button>
@@ -255,6 +321,40 @@ const Settings: React.FC = () => {
         </div>
       </div>
 
+      {/* النسخ التلقائي */}
+      <div className="px-2 space-y-3">
+        <div className="glass-3d p-5 rounded-[2rem] border-white/5 space-y-4">
+          <div className="space-y-1 mb-4">
+            <h3 className="text-sm font-black text-white">النسخ التلقائي</h3>
+            <p className="text-[11px] text-slate-500 font-bold">نسخ تلقائي للبيانات كل عدد أيام محدد</p>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[11px] text-slate-400 font-bold">عدد الأيام (0 = معطل)</label>
+            <input
+              type="number"
+              min="0"
+              max="365"
+              value={autoBackupDays}
+              onChange={(e) => setAutoBackupDays(parseInt(e.target.value, 10))}
+              className="w-full py-2 px-3 rounded-xl font-black text-sm text-white bg-slate-800/50 border border-white/10 focus:border-blue-400 focus:outline-none"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[11px] text-slate-400 font-bold">مسار النسخ التلقائي</label>
+            <input
+              type="text"
+              value={autoBackupPath}
+              onChange={(e) => setAutoBackupPath(e.target.value)}
+              placeholder="مثال: Downloads/TutorMaster-Backups"
+              className="w-full py-2 px-3 rounded-xl font-black text-sm text-white bg-slate-800/50 border border-white/10 focus:border-blue-400 focus:outline-none"
+            />
+            <p className="text-[10px] text-slate-500">المسار النسبي من مجلد التحميلات</p>
+          </div>
+        </div>
+      </div>
+
       {/* حذف البيانات */}
       <div className="px-2 space-y-3">
         <div className="glass-3d p-5 rounded-[2rem] border-white/5 space-y-4">
@@ -272,6 +372,119 @@ const Settings: React.FC = () => {
             </svg>
             حذف جميع البيانات
           </button>
+        </div>
+      </div>
+
+      {/* ملف المعلم */}
+      <div className="px-2 space-y-3">
+        <div className="glass-3d p-5 rounded-[2rem] border-white/5 space-y-4">
+          <div className="space-y-1">
+            <h3 className="text-sm font-black text-white">ملف المعلم</h3>
+            <p className="text-[11px] text-slate-500 font-bold">معلوماتك الشخصية والمهنية</p>
+          </div>
+
+          <div className="space-y-3">
+            {/* Avatar Section */}
+            <div className="space-y-2">
+              <label className="text-[11px] text-slate-400 font-bold">الصورة الشخصية</label>
+              <div className="flex items-center gap-4">
+                <div 
+                  onClick={handleAvatarClick}
+                  className="w-16 h-16 rounded-full bg-slate-700 border-2 border-dashed border-slate-500 flex items-center justify-center cursor-pointer hover:border-blue-400 transition-colors overflow-hidden"
+                >
+                  {teacherProfile.avatar ? (
+                    <img 
+                      src={teacherProfile.avatar} 
+                      alt="Avatar" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <svg className="h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <button
+                    onClick={handleAvatarClick}
+                    className="w-full py-2 px-3 rounded-xl font-black text-sm text-blue-400 bg-blue-600/10 hover:bg-blue-600/20 border border-blue-600/30 transition-all"
+                  >
+                    {teacherProfile.avatar ? 'تغيير الصورة' : 'اختيار صورة'}
+                  </button>
+                  {teacherProfile.avatar && (
+                    <button
+                      onClick={() => setTeacherProfile({ avatar: '' })}
+                      className="w-full mt-1 py-1 px-3 rounded-xl font-black text-xs text-red-400 bg-red-600/10 hover:bg-red-600/20 border border-red-600/30 transition-all"
+                    >
+                      حذف الصورة
+                    </button>
+                  )}
+                </div>
+              </div>
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarSelect}
+                className="hidden"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[11px] text-slate-400 font-bold">الاسم الكامل</label>
+              <input
+                type="text"
+                value={teacherProfile.name}
+                onChange={(e) => setTeacherProfile({ name: e.target.value })}
+                placeholder="أدخل اسمك الكامل"
+                className="w-full py-2 px-3 rounded-xl font-black text-sm text-white bg-slate-800/50 border border-white/10 focus:border-blue-400 focus:outline-none"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[11px] text-slate-400 font-bold">البريد الإلكتروني</label>
+              <input
+                type="email"
+                value={teacherProfile.email}
+                onChange={(e) => setTeacherProfile({ email: e.target.value })}
+                placeholder="example@email.com"
+                className="w-full py-2 px-3 rounded-xl font-black text-sm text-white bg-slate-800/50 border border-white/10 focus:border-blue-400 focus:outline-none"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[11px] text-slate-400 font-bold">رقم الهاتف</label>
+              <input
+                type="tel"
+                value={teacherProfile.phone}
+                onChange={(e) => setTeacherProfile({ phone: e.target.value })}
+                placeholder="+966 50 000 0000"
+                className="w-full py-2 px-3 rounded-xl font-black text-sm text-white bg-slate-800/50 border border-white/10 focus:border-blue-400 focus:outline-none"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[11px] text-slate-400 font-bold">التخصص</label>
+              <input
+                type="text"
+                value={teacherProfile.specialization}
+                onChange={(e) => setTeacherProfile({ specialization: e.target.value })}
+                placeholder="مثال: رياضيات، فيزياء، لغة عربية..."
+                className="w-full py-2 px-3 rounded-xl font-black text-sm text-white bg-slate-800/50 border border-white/10 focus:border-blue-400 focus:outline-none"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[11px] text-slate-400 font-bold">نبذة تعريفية</label>
+              <textarea
+                value={teacherProfile.bio}
+                onChange={(e) => setTeacherProfile({ bio: e.target.value })}
+                placeholder="اكتب نبذة قصيرة عن نفسك وخبراتك..."
+                rows={3}
+                className="w-full py-2 px-3 rounded-xl font-black text-sm text-white bg-slate-800/50 border border-white/10 focus:border-blue-400 focus:outline-none resize-none"
+              />
+            </div>
+          </div>
         </div>
       </div>
 

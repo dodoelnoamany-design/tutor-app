@@ -1,6 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Student, Session, SessionStatus, DayTime } from './types';
+import { LocalNotifications } from '@capacitor/local-notifications';
 
 interface AppContextType {
   students: Student[];
@@ -63,17 +64,76 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('tutor_sessions_v3', JSON.stringify(sessions));
   }, [students, sessions]);
 
-  // Notification system - check for sessions 10 minutes before start
+  // Function to send system notifications
+  const sendSystemNotification = async (title: string, body: string) => {
+    try {
+      // Check if system notifications are enabled in settings
+      const systemNotificationsEnabled = localStorage.getItem('tutor_system_notifications_enabled') !== 'false';
+      
+      if (!systemNotificationsEnabled) return;
+
+      // Request permissions if needed
+      const permStatus = await LocalNotifications.checkPermissions();
+      if (permStatus.display !== 'granted') {
+        const permResult = await LocalNotifications.requestPermissions();
+        if (permResult.display !== 'granted') return;
+      }
+
+      // Send notification
+      await LocalNotifications.schedule({
+        notifications: [{
+          title,
+          body,
+          id: Math.floor(Math.random() * 1000000),
+          schedule: { at: new Date() },
+          sound: 'default',
+          smallIcon: 'ic_stat_icon_config_sample',
+          iconColor: '#3b82f6',
+        }]
+      });
+    } catch (error) {
+      console.log('System notification failed:', error);
+      // Fallback to browser notification if available
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(title, { body, icon: '/icon-192.png' });
+      }
+    }
+  };
+
+  // Request notification permissions on app start
+  useEffect(() => {
+    const requestNotificationPermissions = async () => {
+      try {
+        // Check and request browser notifications
+        if ('Notification' in window && Notification.permission === 'default') {
+          await Notification.requestPermission();
+        }
+
+        // Check and request Capacitor local notifications
+        const permStatus = await LocalNotifications.checkPermissions();
+        if (permStatus.display === 'prompt') {
+          await LocalNotifications.requestPermissions();
+        }
+      } catch (error) {
+        console.log('Permission request failed:', error);
+      }
+    };
+
+    requestNotificationPermissions();
+  }, []);
+
+  // Notification system - check for sessions before start
   useEffect(() => {
     const checkNotifications = () => {
+      const notificationOffset = parseInt(localStorage.getItem('tutor_notification_offset_minutes') || '10', 10);
       const now = new Date();
-      const tenMinutesLater = new Date(now.getTime() + 10 * 60000);
+      const offsetLater = new Date(now.getTime() + notificationOffset * 60000);
 
       sessions.forEach(session => {
         if (session.status === 'pending' && !notifiedSessions.has(session.id)) {
           const sessionDate = new Date(session.dateTime);
           
-          if (sessionDate >= now && sessionDate <= tenMinutesLater) {
+          if (sessionDate >= now && sessionDate <= offsetLater) {
             const student = students.find(s => s.id === session.studentId);
             if (student) {
               const notification = {
@@ -86,6 +146,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               
               setNotifications(prev => [notification, ...prev]);
               setNotifiedSessions(prev => new Set([...prev, session.id]));
+
+              // Send system notification
+              sendSystemNotification(notification.title, notification.message);
 
               // Try to play sound if enabled
               try {
@@ -187,18 +250,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (existingIndex >= 0) {
           // update its dateTime to new time
           nextSessions[existingIndex] = { ...nextSessions[existingIndex], dateTime: targetISO };
-        } else {
-          // create a new pending session for that date/time
-          const studentObj = students.find(st => st.id === studentId);
-          nextSessions.push({
-            id: Math.random().toString(36).substr(2, 9),
-            studentId,
-            dateTime: targetISO,
-            duration: 60,
-            price: studentObj ? studentObj.sessionPrice : 0,
-            status: SessionStatus.PENDING
-          } as Session);
         }
+        // Don't create new sessions here - let generateSessionsForDateRange handle that
       }
 
       return nextSessions.sort((a, b) => a.dateTime.localeCompare(b.dateTime));

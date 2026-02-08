@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useSchool } from '../schoolStore';
 import { useSettings } from '../themeStore';
 import { SchoolSession } from '../types';
@@ -13,13 +13,28 @@ const SchoolSchedule: React.FC = () => {
   const [formData, setFormData] = useState<Omit<SchoolSession, 'id' | 'createdAt'>>({
     name: '',
     level: '',
+    grade: '',
+    boyGirl: 'mixed',
     day: 0,
     time: '08:00',
     duration: 60,
+    endTime: '09:00',
     subject: '',
     notes: '',
     teacher: ''
   });
+
+  // حساب وقت النهاية تلقائياً عند تغيير وقت البداية أو المدة
+  useEffect(() => {
+    if (formData.time && formData.duration) {
+      const [hours, minutes] = formData.time.split(':').map(Number);
+      const totalMinutes = hours * 60 + minutes + formData.duration;
+      const endHours = Math.floor(totalMinutes / 60);
+      const endMinutes = totalMinutes % 60;
+      const endTime = `${endHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}`;
+      setFormData(prev => ({ ...prev, endTime }));
+    }
+  }, [formData.time, formData.duration]);
 
   const days = [
     { name: 'السبت', index: 6 },
@@ -68,9 +83,12 @@ const SchoolSchedule: React.FC = () => {
       setFormData({
         name: '',
         level: '',
+        grade: '',
+        boyGirl: 'mixed',
         day: 0,
         time: '08:00',
         duration: 60,
+        endTime: '09:00',
         subject: '',
         notes: '',
         teacher: ''
@@ -93,10 +111,11 @@ const SchoolSchedule: React.FC = () => {
     setFormData({
       name: session.name,
       level: session.level,
+      grade: session.grade || '',
+      boyGirl: session.boyGirl || 'mixed',
       day: session.day,
       time: session.time,
-      duration: session.duration,
-      subject: session.subject || '',
+      duration: session.duration,      endTime: session.endTime || '',      subject: session.subject || '',
       notes: session.notes || '',
       teacher: session.teacher || ''
     });
@@ -117,9 +136,12 @@ const SchoolSchedule: React.FC = () => {
     setFormData({
       name: '',
       level: '',
+      grade: '',
+      boyGirl: 'mixed',
       day: 0,
       time: '08:00',
       duration: 60,
+      endTime: '09:00',
       subject: '',
       notes: '',
       teacher: ''
@@ -231,11 +253,40 @@ const SchoolSchedule: React.FC = () => {
             />
             <input
               type="text"
-              placeholder="المستوى/الصف"
+              placeholder="المستوى"
               value={formData.level}
               onChange={(e) => setFormData({ ...formData, level: e.target.value })}
               className="bg-slate-900 border border-white/10 rounded-xl px-4 py-2 text-sm text-white outline-none focus:border-blue-500/50 transition-colors"
             />
+            <input
+              type="text"
+              placeholder="الصف الدراسي"
+              value={formData.grade}
+              onChange={(e) => setFormData({ ...formData, grade: e.target.value })}
+              className="bg-slate-900 border border-white/10 rounded-xl px-4 py-2 text-sm text-white outline-none focus:border-blue-500/50 transition-colors"
+            />
+            <select
+              value={formData.boyGirl}
+              onChange={(e) => setFormData({ ...formData, boyGirl: e.target.value as 'boys' | 'girls' | 'mixed' })}
+              className="bg-slate-900 border border-white/10 rounded-xl px-4 py-2 text-sm text-white outline-none focus:border-blue-500/50 transition-colors"
+            >
+              <option value="mixed">مختلط</option>
+              <option value="boys">أولاد</option>
+              <option value="girls">بنات</option>
+            </select>
+            <input
+              type="number"
+              placeholder="المدة (دقيقة)"
+              value={formData.duration}
+              onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) || 60 })}
+              className="bg-slate-900 border border-white/10 rounded-xl px-4 py-2 text-sm text-white outline-none focus:border-blue-500/50 transition-colors"
+              min="15"
+              max="300"
+              step="15"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
             <select
               value={formData.day}
               onChange={(e) => setFormData({ ...formData, day: parseInt(e.target.value) })}
@@ -245,12 +296,22 @@ const SchoolSchedule: React.FC = () => {
                 <option key={d.index} value={d.index}>{d.name}</option>
               ))}
             </select>
-            <input
-              type="time"
-              value={formData.time}
-              onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-              className="bg-slate-900 border border-white/10 rounded-xl px-4 py-2 text-sm text-white outline-none focus:border-blue-500/50 transition-colors"
-            />
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                type="time"
+                value={formData.time}
+                onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                className="bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-blue-500/50 transition-colors"
+                placeholder="البداية"
+              />
+              <input
+                type="time"
+                value={formData.endTime || ''}
+                onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                className="bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-blue-500/50 transition-colors"
+                placeholder="النهاية"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -336,6 +397,9 @@ const SchoolSchedule: React.FC = () => {
                               <>
                                 <span className="text-[9px] font-black text-white truncate w-full" style={{ fontSize: `${8 * scheduleZoom}px` }}>
                                   {session.name}
+                                </span>
+                                <span className="text-[7px] text-purple-400 opacity-80" style={{ fontSize: `${6 * scheduleZoom}px` }}>
+                                  {session.time} - {session.endTime || 'غير محدد'}
                                 </span>
                                 <span className="text-[7px] text-purple-400 opacity-80" style={{ fontSize: `${6 * scheduleZoom}px` }}>
                                   {session.level}

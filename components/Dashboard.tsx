@@ -5,7 +5,7 @@ import { SessionStatus } from '../types';
 import DailySummaryModal from './DailySummaryModal';
 
 const Dashboard: React.FC<{ onNavigate: (tab: any) => void }> = ({ onNavigate }) => {
-  const { getStats, getDailyIncome, getStudentById, generateSessionsForDateRange } = useApp();
+  const { getStats, getDailyIncome, getStudentById, generateSessionsForDateRange, notifications, clearNotifications } = useApp();
   const stats = getStats();
   const [showSummary, setShowSummary] = useState(false);
 
@@ -141,6 +141,47 @@ const Dashboard: React.FC<{ onNavigate: (tab: any) => void }> = ({ onNavigate })
           <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">إلغاءات اليوم</p>
         </div>
       </div>
+
+      {/* الإشعارات */}
+      <section className="space-y-5">
+        <div className="flex items-center justify-between px-2">
+          <h3 className="text-lg font-black text-white tracking-tight">الإشعارات</h3>
+          {notifications.length > 0 && (
+            <button onClick={clearNotifications} className="text-red-400 text-xs font-black uppercase tracking-widest bg-red-400/10 px-4 py-2 rounded-xl border border-red-400/20">مسح الكل</button>
+          )}
+        </div>
+
+        <div className="space-y-3">
+          {notifications.length === 0 ? (
+            <div className="glass-3d p-6 rounded-[2rem] border-white/5 text-center">
+              <div className="w-16 h-16 bg-slate-600/20 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM4.868 12.683A17.925 17.925 0 0112 21c7.962 0 12-1.21 12-2.683m-12 2.683a17.925 17.925 0 01-7.132-8.317M12 21c4.411 0 8-4.03 8-9s-3.589-9-8-9-8 4.03-8 9a9.06 9.06 0 001.832 5.683L4 21l4.868-8.317z" />
+                </svg>
+              </div>
+              <p className="text-slate-400 font-black text-sm">ليس لديك تنبيهات الآن</p>
+              <p className="text-slate-500 text-xs font-bold mt-1">ستظهر هنا إشعارات الحصص القادمة</p>
+            </div>
+          ) : (
+            notifications.map((notification: any) => (
+              <div key={notification.id} className="glass-3d p-4 rounded-[1.5rem] border-white/5 bg-blue-600/5 border-blue-500/10">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 bg-blue-600/20 text-blue-400 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-sm font-black text-white">{notification.title}</h4>
+                    <p className="text-xs text-slate-400 font-bold mt-1">{notification.message}</p>
+                    <p className="text-[10px] text-slate-500 font-bold mt-2">{new Date(notification.timestamp).toLocaleString('ar-EG')}</p>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
 
       <section className="space-y-5">
         <div className="flex items-center justify-between px-2">

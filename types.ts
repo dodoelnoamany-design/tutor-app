@@ -41,9 +41,12 @@ export interface SchoolSession {
   id: string;
   name: string;
   level: string;
+  grade: string; // الصف الدراسي
+  boyGirl: 'boys' | 'girls' | 'mixed'; // أولاد/بنات/مختلط
   day: number; // 0-6 (Sunday-Saturday)
   time: string; // HH:mm
   duration: number; // in minutes
+  endTime?: string; // HH:mm - وقت النهاية
   subject?: string;
   notes?: string;
   teacher?: string;
