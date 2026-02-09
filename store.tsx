@@ -21,7 +21,7 @@ interface AppContextType {
   getDailySessions: (dateStr: string) => Session[];
   getDailyIncome: (date: string) => number;
   getExpectedMonthlyIncome: () => number;
-  generateSessionsForDateRange: (daysAhead: number) => void;
+  generateSessionsForDateRange: (daysAhead: number, studentList?: Student[]) => void;
   getStats: () => {
     totalIncome: number;
     cancelledCount: number;
@@ -178,15 +178,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => clearInterval(interval);
   }, [sessions, students, notifiedSessions]);
 
-  const generateSessionsForDateRange = useCallback((daysAhead: number) => {
-    if (students.length === 0) return;
+  const generateSessionsForDateRange = useCallback((daysAhead: number, studentList?: Student[]) => {
+    const currentStudents = studentList || students;
+    if (currentStudents.length === 0) return;
 
     setSessions(prevSessions => {
       const newSessions: Session[] = [...prevSessions];
       const now = new Date();
       now.setHours(0, 0, 0, 0);
       
-      students.forEach(student => {
+      currentStudents.forEach(student => {
         student.fixedSchedule.forEach(schedule => {
           for (let i = 0; i <= daysAhead; i++) {
             const date = new Date(now);
@@ -239,9 +240,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const isFuture = sessionDate >= now;
         const isSameDay = sessionDate.getDay() === day;
         const isSameStudent = session.studentId === studentId;
-        const isPendingOrRescheduled = session.status === SessionStatus.PENDING || session.status === SessionStatus.RESCHEDULED;
 
-        if (isFuture && isSameDay && isSameStudent && isPendingOrRescheduled) {
+        if (isFuture && isSameDay && isSameStudent) {
           // Update the existing session with new time
           const [hours, minutes] = newTime.split(':');
           const updatedDate = new Date(session.dateTime);
@@ -264,15 +264,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: Math.random().toString(36).substr(2, 9),
       createdAt: Date.now(),
     };
-    setStudents(prev => [...prev, newStudent]);
-    // Generate sessions for the new student only
-    setTimeout(() => generateSessionsForDateRange(30), 0);
+    setStudents(prev => {
+      const updatedStudents = [...prev, newStudent];
+      // Generate sessions for all students including the new one
+      generateSessionsForDateRange(30, updatedStudents);
+      return updatedStudents;
+    });
   };
 
   // Generate initial sessions only on first load
   useEffect(() => {
     if (students.length > 0 && sessions.length === 0) {
-      generateSessionsForDateRange(30);
+      generateSessionsForDateRange(30, students);
     }
   }, []); // Empty dependency array - only run once on mount
 

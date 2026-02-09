@@ -30,7 +30,23 @@ const App: React.FC = () => {
       }
     };
 
+    // Load custom colors on app start
+    const loadCustomColors = () => {
+      const savedColors = localStorage.getItem('tutor_custom_colors');
+      if (savedColors) {
+        const colors = JSON.parse(savedColors);
+        const root = document.documentElement;
+        root.style.setProperty('--color-primary', colors.primary);
+        root.style.setProperty('--color-secondary', colors.secondary);
+        root.style.setProperty('--color-accent', colors.accent);
+        root.style.setProperty('--color-background', colors.background);
+        root.style.setProperty('--color-text', colors.text);
+        console.log('Loaded custom colors on app start:', colors);
+      }
+    };
+
     requestFilePermissions();
+    loadCustomColors();
   }, []);
 
   const renderContent = () => {
@@ -50,7 +66,7 @@ const App: React.FC = () => {
     <SettingsProvider>
       <SchoolProvider>
         <AppProvider>
-          <div className="min-h-screen pb-24 bg-[#020617] dark:bg-[#020617] light:bg-white">
+          <div className="min-h-screen pb-24 bg-[var(--color-background)] dark:bg-[var(--color-background)] light:bg-white">
             <Header />
             <main className="max-w-md mx-auto px-4 pt-4">
               {renderContent()}

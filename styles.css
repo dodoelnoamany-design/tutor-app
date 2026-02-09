@@ -1,3 +1,77 @@
+/* CSS Variables for Custom Colors */
+:root {
+  --color-primary: #3b82f6;
+  --color-secondary: #1e40af;
+  --color-accent: #f59e0b;
+  --color-background: #020617;
+  --color-text: #f8fafc;
+}
+
+/* Apply custom colors */
+body {
+  background-color: var(--color-background) !important;
+  color: var(--color-text) !important;
+}
+
+.min-h-screen {
+  background-color: var(--color-background) !important;
+}
+
+.glass-3d {
+  background: rgba(2, 6, 23, 0.8) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+button.bg-blue-600 {
+  background-color: var(--color-primary) !important;
+}
+
+button.bg-blue-600:hover {
+  background-color: var(--color-secondary) !important;
+}
+
+.text-blue-400 {
+  color: var(--color-primary) !important;
+}
+
+.bg-emerald-600 {
+  background-color: var(--color-accent) !important;
+}
+
+.text-white {
+  color: var(--color-text) !important;
+}
+
+.bg-slate-900 {
+  background-color: rgba(2, 6, 23, 0.9) !important;
+}
+
+.bg-slate-800 {
+  background-color: rgba(15, 23, 42, 0.8) !important;
+}
+
+.text-slate-500 {
+  color: rgba(248, 250, 252, 0.6) !important;
+}
+
+.text-slate-400 {
+  color: rgba(248, 250, 252, 0.5) !important;
+}
+
+/* Override Tailwind colors with CSS variables */
+.bg-blue-600 {
+  background-color: var(--color-primary) !important;
+}
+
+.text-blue-400 {
+  color: var(--color-primary) !important;
+}
+
+.bg-emerald-600 {
+  background-color: var(--color-accent) !important;
+}
+
 /* Light Mode Styles */
 html.light {
   --color-bg-primary: #ffffff;
@@ -7,6 +81,11 @@ html.light {
   --color-text-secondary: #475569;
   --color-text-tertiary: #64748b;
   --color-border: rgba(0, 0, 0, 0.1);
+  --color-primary: var(--color-primary, #3b82f6);
+  --color-secondary: var(--color-secondary, #1e40af);
+  --color-accent: var(--color-accent, #f59e0b);
+  --color-background: var(--color-background, #020617);
+  --color-text: var(--color-text, #f8fafc);
 }
 
 html.light body,

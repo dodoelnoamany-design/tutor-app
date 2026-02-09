@@ -14,8 +14,11 @@
     "@capacitor/android": "^8.0.2",
     "@capacitor/cli": "^8.0.2",
     "@capacitor/core": "^8.0.2",
+    "@capacitor/device": "^8.0.0",
+    "@capacitor/dialog": "^8.0.0",
     "@capacitor/filesystem": "^8.1.0",
     "@capacitor/local-notifications": "^8.0.0",
+    "@capacitor/share": "^8.0.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },
