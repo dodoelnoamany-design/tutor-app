@@ -93,12 +93,7 @@ const App: React.FC = () => {
         <AppProvider>
           <div className="min-h-screen pb-24 bg-[var(--color-background)] dark:bg-[var(--color-background)] light:bg-white">
             <Header />
-            <main
-              className="max-w-md mx-auto px-4 pt-4"
-              onTouchStart={handleTouchStart}
-              onTouchEnd={handleTouchEnd}
-              style={{ touchAction: 'pan-y' }}
-            >
+            <main className="max-w-md mx-auto px-4 pt-4">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={activeTab}

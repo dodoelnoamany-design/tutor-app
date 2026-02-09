@@ -126,9 +126,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     const checkNotifications = () => {
       const notificationOffset = parseInt(localStorage.getItem('tutor_notification_offset_minutes') || '10', 10);
+      const notificationsEnabled = localStorage.getItem('tutor_notifications_enabled') !== 'false';
       const now = new Date();
       const offsetLater = new Date(now.getTime() + notificationOffset * 60000);
 
+      if (!notificationsEnabled) return;
       sessions.forEach(session => {
         if (session.status === 'pending' && !notifiedSessions.has(session.id)) {
           const sessionDate = new Date(session.dateTime);

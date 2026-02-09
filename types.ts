@@ -17,8 +17,12 @@ export interface Student {
   name: string;
   phone?: string;
   level?: string;
+  age?: string;
   parentName?: string;
   parentPhone?: string;
+  parentEmail?: string;
+  parentJob?: string;
+  notes?: string;
   monthlyPrice: number;
   sessionsPerWeek: number;
   sessionPrice: number;
