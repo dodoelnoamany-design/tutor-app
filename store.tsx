@@ -261,15 +261,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addStudent = (data: Omit<Student, 'id' | 'createdAt'>) => {
+    const sessionsPerWeek = (data.fixedSchedule || []).length || 0;
+    const monthlyPrice = (data as any).monthlyPrice ?? ((data as any).sessionPrice ? (data as any).sessionPrice * sessionsPerWeek * 4 : 0);
+    const sessionPrice = sessionsPerWeek > 0 ? Math.round((monthlyPrice / (sessionsPerWeek * 4)) * 100) / 100 : 0;
+
     const newStudent: Student = {
       ...data,
+      monthlyPrice,
+      sessionsPerWeek,
+      sessionPrice,
       id: Math.random().toString(36).substr(2, 9),
       createdAt: Date.now(),
     };
+
     setStudents(prev => {
       const updatedStudents = [...prev, newStudent];
-      // Generate sessions for all students including the new one
-      generateSessionsForDateRange(30, updatedStudents);
+      // Generate sessions for the new student only
+      generateSessionsForDateRange(30, [newStudent]);
       return updatedStudents;
     });
   };
@@ -286,7 +294,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateStudent = (student: Student) => {
-    setStudents(prev => prev.map(s => s.id === student.id ? student : s));
+    // Recalculate session price and sessionsPerWeek
+    const sessionsPerWeek = (student.fixedSchedule || []).length || 0;
+    const monthlyPrice = student.monthlyPrice ?? (student.sessionPrice ? student.sessionPrice * sessionsPerWeek * 4 : 0);
+    const sessionPrice = sessionsPerWeek > 0 ? Math.round((monthlyPrice / (sessionsPerWeek * 4)) * 100) / 100 : 0;
+
+    const updatedStudent = { ...student, sessionsPerWeek, monthlyPrice, sessionPrice };
+
+    setStudents(prev => prev.map(s => s.id === student.id ? updatedStudent : s));
+
+    // Remove future sessions for this student and regenerate from updated schedule
+    setSessions(prev => prev.filter(sess => {
+      const sessDate = new Date(sess.dateTime);
+      const now = new Date(); now.setHours(0,0,0,0);
+      if (sess.studentId !== student.id) return true;
+      // keep past sessions
+      return sessDate < now;
+    }));
+
+    // Regenerate upcoming sessions for this single student
+    generateSessionsForDateRange(30, [updatedStudent]);
   };
 
   const deleteStudent = (id: string) => {

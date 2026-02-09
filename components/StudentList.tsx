@@ -21,7 +21,7 @@ const StudentList: React.FC = () => {
     parentName: '', 
     parentPhone: '', 
     notes: '', 
-    sessionPrice: '',
+    monthlyPrice: '',
     fixedSchedule: [] as DayTime[] 
   });
   
@@ -68,7 +68,7 @@ const StudentList: React.FC = () => {
       parentName: s.parentName || '', 
       parentPhone: s.parentPhone || '', 
       notes: s.notes || '', 
-      sessionPrice: s.sessionPrice?.toString() || '',
+      monthlyPrice: s.monthlyPrice?.toString() || '',
       fixedSchedule: [...s.fixedSchedule] 
     });
     setShowModal(true);
@@ -77,14 +77,33 @@ const StudentList: React.FC = () => {
   // حفظ البيانات
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Conflict prevention: ensure no other student has same day+time
+    for (const fd of formData.fixedSchedule) {
+      const conflict = students.find(s => {
+        if (editingStudent && s.id === editingStudent.id) return false;
+        return s.fixedSchedule.some((other: DayTime) => other.day === fd.day && other.time === fd.time);
+      });
+      if (conflict) {
+        alert(`هذا الموعد محجوز مسبقاً للطالب ${conflict.name}`);
+        return;
+      }
+    }
+
+    const monthlyPrice = formData.monthlyPrice ? Number(formData.monthlyPrice) : 0;
+    const sessionsPerWeek = (formData.fixedSchedule || []).length || 0;
+    const sessionPrice = sessionsPerWeek > 0 ? Math.round((monthlyPrice / (sessionsPerWeek * 4)) * 100) / 100 : 0;
+
     const studentData = {
       ...formData,
-      sessionPrice: formData.sessionPrice ? Number(formData.sessionPrice) : 0,
+      monthlyPrice,
+      sessionsPerWeek,
+      sessionPrice
     };
+
     if (editingStudent) {
       updateStudent({ ...editingStudent, ...studentData });
     } else {
-      addStudent({ ...studentData, id: Date.now().toString(), paidAmount: 0 });
+      addStudent({ ...studentData, id: Date.now().toString(), paidAmount: 0 } as any);
     }
     setShowModal(false);
   };
@@ -207,7 +226,7 @@ const StudentList: React.FC = () => {
               <input required type="text" placeholder="اسم الطالب (إجباري)" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-white font-bold" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
               
               <div className="grid grid-cols-2 gap-3">
-                <input type="tel" placeholder="رقم الطالب" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+                <input type="tel" placeholder="رقم الطالب" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white text-right" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
                 <input type="text" placeholder="المستوى" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white" value={formData.level} onChange={e => setFormData({...formData, level: e.target.value})} />
               </div>
 
@@ -216,9 +235,9 @@ const StudentList: React.FC = () => {
                 <input type="tel" placeholder="رقم ولي الأمر" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white" value={formData.parentPhone} onChange={e => setFormData({...formData, parentPhone: e.target.value})} />
               </div>
 
-              <input type="number" placeholder="السن" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white" value={formData.age} onChange={e => setFormData({...formData, age: e.target.value})} />
+              <input type="number" placeholder="السن" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white text-right" value={formData.age} onChange={e => setFormData({...formData, age: e.target.value})} />
               
-              <input type="number" placeholder="سعر الحصة (جنيه)" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white" value={formData.sessionPrice} onChange={e => setFormData({...formData, sessionPrice: e.target.value})} />
+              <input type="number" placeholder="سعر الشهر (جنيه)" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white text-right" value={formData.monthlyPrice} onChange={e => setFormData({...formData, monthlyPrice: e.target.value})} />
               <textarea placeholder="ملاحظات..." className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white h-20" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} />
 
               {/* اختيار المواعيد الثابتة */}

@@ -45,12 +45,14 @@ const Settings: React.FC = () => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = (event) => {
+      reader.onload = async (event) => {
         const content = event.target?.result as string;
-        if (importData(content)) {
-          alert('تمت استعادة كافة البيانات بنجاح ✅');
-        } else {
-          alert('فشل الاستيراد، تأكد من صحة الملف ❌');
+        try {
+          const ok = await importData(content);
+          if (ok) alert('تمت استعادة كافة البيانات بنجاح ✅');
+          else alert('فشل الاستيراد، تأكد من صحة الملف ❌');
+        } catch (e) {
+          alert('فشل الاستيراد، حدث خطأ ❌');
         }
       };
       reader.readAsText(file);

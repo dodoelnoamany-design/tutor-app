@@ -34,26 +34,39 @@ const AppointmentsSchedule: React.FC = () => {
     return slots;
   }, []);
 
-  // 1. فلترة الأيام التي تحتوي على حصص فقط
-  const activeDays = useMemo(() => {
-    return allDays.filter(day => 
-      students.some(s => s.fixedSchedule.some(fs => fs.day === day.index))
-    );
-  }, [students, allDays]);
+  // Build next 7 days starting from today (for "هذا الأسبوع" grouping)
+  const weekDates = useMemo(() => {
+    const today = new Date();
+    const days: { date: Date; dayIndex: number; name: string }[] = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      const dayIdx = d.getDay();
+      const nameObj = allDays.find(x => x.index === dayIdx) || { name: d.toLocaleDateString('ar-EG', { weekday: 'long' }), index: dayIdx };
+      days.push({ date: d, dayIndex: dayIdx, name: nameObj.name });
+    }
+    return days;
+  }, [students]);
 
-  // 2. فلترة الساعات التي تحتوي على حصص فقط
+  // Active days within the coming week that have fixedSchedule items
+  const activeDays = useMemo(() => {
+    return weekDates.filter(day => students.some(s => s.fixedSchedule.some(fs => fs.day === day.dayIndex)));
+  }, [students, weekDates]);
+
+  // Active time slots within the coming week
   const activeTimeSlots = useMemo(() => {
     return allTimeSlots.filter(slot => 
       students.some(s => s.fixedSchedule.some(fs => {
         const fsHour = parseInt(fs.time.split(':')[0]);
-        return fsHour === slot.hour;
+        return fsHour === slot.hour && weekDates.some(wd => wd.dayIndex === fs.day);
       }))
     );
-  }, [students, allTimeSlots]);
+  }, [students, allTimeSlots, weekDates]);
 
-  const getStudentForSlot = (dayIndex: number, timeStr: string) => {
+  // Return all students for a given day/time (to show conflicts or multiple students)
+  const getStudentsForSlot = (dayIndex: number, timeStr: string) => {
     const hour = parseInt(timeStr.split(':')[0]);
-    return students.find(s => 
+    return students.filter(s => 
       s.fixedSchedule.some(fs => {
         const fsHour = parseInt(fs.time.split(':')[0]);
         return fs.day === dayIndex && fsHour === hour;
@@ -145,9 +158,17 @@ const AppointmentsSchedule: React.FC = () => {
               <tr>
                 <th className="pb-3" style={{ width: `${80 * scheduleZoom}px` }}></th>
                 {activeDays.map(day => (
-                  <th key={day.index} className="pb-3" style={{ minWidth: `${120 * scheduleZoom}px` }}>
+                  <th key={day.dayIndex} className="pb-3" style={{ minWidth: `${120 * scheduleZoom}px` }}>
                     <div className="bg-slate-900 border border-white/10 rounded-xl py-2 text-[10px] font-black text-blue-400 shadow-sm" style={{ padding: `${8 * scheduleZoom}px ${12 * scheduleZoom}px`, fontSize: `${10 * scheduleZoom}px` }}>
-                      {day.name}
+                      <div className="text-sm font-black">{day.name}</div>
+                      <div className="text-[10px] text-slate-400 mt-1">{day.date.toLocaleDateString('ar-EG')}</div>
+                      <div className="text-[9px] text-amber-400 mt-1 font-black">{(() => {
+                        const today = new Date();
+                        const diff = Math.floor((day.date.setHours(0,0,0,0) - (new Date()).setHours(0,0,0,0)) / (1000*60*60*24));
+                        if (diff === 0) return 'اليوم';
+                        if (diff === 1) return 'غداً';
+                        return '';
+                      })()}</div>
                     </div>
                   </th>
                 ))}
@@ -162,20 +183,20 @@ const AppointmentsSchedule: React.FC = () => {
                     </span>
                   </td>
                   {activeDays.map(day => {
-                    const student = getStudentForSlot(day.index, slot.raw);
+                    const studentsFor = getStudentsForSlot(day.dayIndex, slot.raw);
                     return (
-                      <td key={`${day.index}-${slot.raw}`} style={{ height: `${64 * scheduleZoom}px` }}>
+                      <td key={`${day.dayIndex}-${slot.raw}`} style={{ height: `${64 * scheduleZoom}px` }}>
                         <div className={`w-full h-full rounded-xl border transition-all flex flex-col items-center justify-center text-center group ${
-                          student 
-                            ? 'bg-blue-600/20 border-blue-500/40 shadow-lg shadow-blue-900/10' 
+                          studentsFor.length > 0
+                            ? 'bg-blue-600/20 border-blue-500/40 shadow-lg shadow-blue-900/10'
                             : 'bg-slate-900/10 border-dashed border-slate-800/30'
                         }`} style={{ padding: `${6 * scheduleZoom}px` }}>
-                          {student ? (
+                          {studentsFor.length > 0 ? (
                             <>
-                              <span className="text-[9px] font-black text-white truncate w-full" style={{ marginBottom: `${4 * scheduleZoom}px`, fontSize: `${9 * scheduleZoom}px` }}>{student.name}</span>
+                              <span className="text-[9px] font-black text-white truncate w-full" style={{ marginBottom: `${4 * scheduleZoom}px`, fontSize: `${9 * scheduleZoom}px` }}>{studentsFor.map(st => st.name).join(' • ')}</span>
                               <div className="flex flex-col gap-0.5">
                                 <span className="text-[7px] font-black text-blue-400 opacity-80 uppercase tracking-tighter" style={{ fontSize: `${7 * scheduleZoom}px` }}>
-                                  {student.level}
+                                  {studentsFor.map(st => st.level).filter(Boolean).join(' • ')}
                                 </span>
                               </div>
                             </>
