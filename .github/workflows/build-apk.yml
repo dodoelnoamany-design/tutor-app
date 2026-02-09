@@ -42,6 +42,16 @@ jobs:
         api-level: 34
         build-tools: 34.0.0
 
+    - name: Verify web build output
+      run: |
+        echo "Listing repository root:"
+        ls -la
+        echo "Listing dist/:"
+        ls -la dist || true
+        if [ ! -f dist/index.html ]; then
+          echo "dist/index.html not found — running npm run build again"
+          npm run build
+        fi
 
     - name: Sync Capacitor
       run: npx cap sync android
