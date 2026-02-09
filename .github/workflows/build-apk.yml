@@ -19,10 +19,15 @@ jobs:
         node-version: '22'
         cache: 'npm'
 
-    - name: Install dependencies
-      run: npm ci
 
-    - name: Build web app
+    - name: Clean npm cache and dependencies
+      run: |
+        npm cache clean --force
+        rm -rf node_modules package-lock.json
+        npm install
+
+
+    - name: Build web assets
       run: npm run build
 
     - name: Setup Java
@@ -37,13 +42,21 @@ jobs:
         api-level: 34
         build-tools: 34.0.0
 
+
     - name: Sync Capacitor
       run: npx cap sync android
+
+    - name: Clean Android build outputs
+      run: |
+        rm -rf android/app/build/outputs/apk/debug/*
+        rm -rf android/app/build/intermediates
+
 
     - name: Build APK
       run: |
         cd android
         chmod +x gradlew
+        ./gradlew clean
         ./gradlew assembleDebug
 
     - name: Upload APK
