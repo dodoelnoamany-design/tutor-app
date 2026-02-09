@@ -1,0 +1,37 @@
+name: Build Android APK
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Clean install dependencies (npm ci)
+        run: npm ci
+
+      - name: Clean Gradle cache
+        run: rm -rf ~/.gradle/caches
+
+      - name: Bump Android version (auto)
+        run: |
+          sed -i 's/versionCode \([0-9]*\)/versionCode $((\1+1))/' android/app/build.gradle
+          sed -i 's/versionName "[0-9.]*"/versionName "$(date +%Y.%m.%d.%H%M)"/' android/app/build.gradle
+
+      - name: Capacitor Sync
+        run: npx cap sync android
+
+      - name: Build APK
+        run: cd android && ./gradlew assembleRelease
+
+      # يمكنك إضافة خطوة لرفع الـ APK إلى artifacts أو Google Drive أو أي مكان آخر

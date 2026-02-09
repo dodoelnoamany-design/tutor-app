@@ -4,6 +4,8 @@ import { DayTime, Student } from '../types';
 
 const StudentList: React.FC = () => {
   const { students, addStudent, updateStudent, deleteStudent, updateFixedSchedule } = useApp();
+  const [search, setSearch] = useState('');
+  const [expanded, setExpanded] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   
@@ -80,16 +82,31 @@ const StudentList: React.FC = () => {
         </button>
       </div>
 
+      <input
+        type="text"
+        placeholder="بحث باسم الطالب أو المستوى..."
+        className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-white font-bold mb-2"
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+      />
+
       <div className="grid gap-4">
-        {students.map(s => (
+        {students.filter(s =>
+          s.name.includes(search) || (s.level && s.level.includes(search))
+        ).map(s => (
           <div key={s.id} className="glass-3d p-5 rounded-3xl relative overflow-hidden border border-white/5">
             <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-600"></div>
-            <div className="flex justify-between items-start">
-              <div className="flex-1">
-                <h3 className="font-black text-white text-lg">{s.name}</h3>
+            <button
+              className="w-full text-right flex items-center justify-between mb-2"
+              onClick={() => setExpanded(expanded === s.id ? null : s.id)}
+            >
+              <span className="font-black text-white text-lg">{s.name}</span>
+              <svg className={`h-5 w-5 text-slate-400 transition-transform ${expanded === s.id ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+            </button>
+            {expanded === s.id && (
+              <div>
                 <p className="text-[10px] text-slate-500 font-bold mb-3">{s.level || 'عام'} { (s as any).age ? `• ${ (s as any).age } سنة` : '' }</p>
-                
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 mb-2">
                   {s.fixedSchedule.map(d => (
                     <button 
                       key={d.day} 
@@ -106,12 +123,12 @@ const StudentList: React.FC = () => {
                     </button>
                   ))}
                 </div>
+                <div className="flex flex-col gap-2 mr-2">
+                  <button onClick={() => openEdit(s)} className="p-2 bg-slate-800 rounded-xl text-blue-400"><svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
+                  <button onClick={() => window.confirm('حذف الطالب؟') && deleteStudent(s.id)} className="p-2 bg-slate-800 rounded-xl text-rose-500"><svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                </div>
               </div>
-              <div className="flex flex-col gap-2 mr-2">
-                <button onClick={() => openEdit(s)} className="p-2 bg-slate-800 rounded-xl text-blue-400"><svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
-                <button onClick={() => window.confirm('حذف الطالب؟') && deleteStudent(s.id)} className="p-2 bg-slate-800 rounded-xl text-rose-500"><svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
-              </div>
-            </div>
+            )}
           </div>
         ))}
       </div>

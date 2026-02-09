@@ -108,7 +108,9 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return saved ? JSON.parse(saved) : { name: '', email: '', phone: '', bio: '', specialization: '', avatar: '' };
   });
 
-  // تطبيق المظهر (Dark/Light) والألوان المخصصة
+  // ربط إعدادات الإشعارات مع واجهة الإعدادات
+  const notificationMinutes = notificationOffsetMinutes;
+  const setNotificationMinutes = setNotificationOffsetMinutesState;
   useEffect(() => {
     const html = document.documentElement;
     html.classList.remove('light', 'dark');
@@ -159,37 +161,11 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const a = document.createElement('a');
       a.href = url;
       a.download = fileName;
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    } else {
-      try {
-        const result = await Filesystem.writeFile({
-          path: fileName,
-          data: jsonStr,
-          directory: Directory.Documents,
-          encoding: Encoding.UTF8
-        });
-        await Share.share({
-          title: 'نسخة TutorMaster الاحتياطية',
-          url: result.uri,
-          dialogTitle: 'حفظ النسخة في مكان آمن'
-        });
-      } catch (e) {
-        alert('فشل حفظ الملف، تأكد من منح صلاحية الوصول للملفات');
-      }
-    }
-  };
-
-  // --- دالة الاستعادة الكبرى ---
-  const importData = (jsonData: string): boolean => {
-    try {
-      const backup = JSON.parse(jsonData);
-      // إذا كانت النسخة شاملة (v3)
-      if (backup.data) {
-        localStorage.clear(); // نمسح الحالي لضمان نظافة البيانات
-        Object.entries(backup.data).forEach(([key, value]) => {
-          localStorage.setItem(key, value as string);
-        });
+      // انتهى تصدير النسخة الاحتياطية للويب
       } else {
         // دعم النسخ القديمة جداً
         if (backup.students) localStorage.setItem('tutor_students_v3', JSON.stringify(backup.students));
@@ -232,7 +208,9 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       notificationsEnabled, setNotificationsEnabled, systemNotificationsEnabled, setSystemNotificationsEnabled,
       notificationOffsetMinutes, setNotificationOffsetMinutes, autoBackupDays, setAutoBackupDays,
       autoBackupPath, setAutoBackupPath, customColors, setCustomColors, resetCustomColors,
-      teacherProfile, setTeacherProfile, exportData, importData, resetToDefaults
+      teacherProfile, setTeacherProfile, exportData, importData, resetToDefaults,
+      notificationMinutes: notificationOffsetMinutes,
+      setNotificationMinutes: setNotificationOffsetMinutes
     }}>
       {children}
     </SettingsContext.Provider>

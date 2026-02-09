@@ -1,5 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { AppProvider } from './store';
 import { SettingsProvider } from './themeStore';
 import { SchoolProvider } from './schoolStore';
@@ -16,6 +17,30 @@ import { Filesystem } from '@capacitor/filesystem';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'students' | 'sessions' | 'appointments' | 'school' | 'finance' | 'settings'>('dashboard');
+  const tabsOrder = ['dashboard', 'students', 'appointments', 'school', 'finance', 'sessions', 'settings'] as const;
+  const touchStartX = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
+
+  // منطق السحب
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    touchEndX.current = e.changedTouches[0].clientX;
+    if (touchStartX.current !== null && touchEndX.current !== null) {
+      const dx = touchEndX.current - touchStartX.current;
+      if (Math.abs(dx) > 60) {
+        const currentIdx = tabsOrder.indexOf(activeTab);
+        if (dx < 0 && currentIdx < tabsOrder.length - 1) {
+          setActiveTab(tabsOrder[currentIdx + 1]);
+        } else if (dx > 0 && currentIdx > 0) {
+          setActiveTab(tabsOrder[currentIdx - 1]);
+        }
+      }
+    }
+    touchStartX.current = null;
+    touchEndX.current = null;
+  };
 
   // Request file system permissions on app start
   useEffect(() => {
@@ -68,8 +93,23 @@ const App: React.FC = () => {
         <AppProvider>
           <div className="min-h-screen pb-24 bg-[var(--color-background)] dark:bg-[var(--color-background)] light:bg-white">
             <Header />
-            <main className="max-w-md mx-auto px-4 pt-4">
-              {renderContent()}
+            <main
+              className="max-w-md mx-auto px-4 pt-4"
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+              style={{ touchAction: 'pan-y' }}
+            >
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeTab}
+                  initial={{ x: 100, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  exit={{ x: -100, opacity: 0 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  {renderContent()}
+                </motion.div>
+              </AnimatePresence>
             </main>
             <BottomNav activeTab={activeTab as any} setActiveTab={setActiveTab as any} />
           </div>
