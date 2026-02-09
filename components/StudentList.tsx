@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useSettings } from '../store'; // تأكد من أن الـ Hook هو useSettings أو useApp حسب ملف الـ Store عندك
+import { useApp } from '../store';
 import { DayTime, Student } from '../types';
 
 const StudentList: React.FC = () => {
   // جلب البيانات والدوال من الـ Store
   // ملاحظة: لو اسم الـ Hook عندك useApp غيره هنا
-  const { students, addStudent, updateStudent, deleteStudent, updateFixedSchedule } = useSettings() as any;
+  const { students, addStudent, updateStudent, deleteStudent, updateFixedSchedule } = useApp();
 
   const [search, setSearch] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
