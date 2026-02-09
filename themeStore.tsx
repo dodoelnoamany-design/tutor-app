@@ -100,6 +100,10 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const key = localStorage.key(i);
       if (key) allData[key] = localStorage.getItem(key) || '';
     }
+    // إضافة بيانات الإعدادات والملف الشخصي بشكل صريح
+    allData['tutor_teacher_profile'] = localStorage.getItem('tutor_teacher_profile') || '{}';
+    allData['tutor_theme'] = localStorage.getItem('tutor_theme') || 'dark';
+    allData['tutor_custom_colors'] = localStorage.getItem('tutor_custom_colors') || '';
     const backup = { version: '3.0', timestamp: Date.now(), data: allData };
     const jsonStr = JSON.stringify(backup, null, 2);
     const fileName = `TutorMaster_Backup.json`;
@@ -110,6 +114,8 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url; a.download = fileName; a.click();
+      // مشاركة النسخة الاحتياطية
+      await Share.share({ title: 'نسخة احتياطية', text: 'ملف النسخة الاحتياطية لتطبيق TutorMaster', url });
     } else {
       const result = await Filesystem.writeFile({
         path: fileName, data: jsonStr, directory: Directory.Documents, encoding: Encoding.UTF8

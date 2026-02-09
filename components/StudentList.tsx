@@ -21,6 +21,7 @@ const StudentList: React.FC = () => {
     parentName: '', 
     parentPhone: '', 
     notes: '', 
+    sessionPrice: '',
     fixedSchedule: [] as DayTime[] 
   });
   
@@ -67,6 +68,7 @@ const StudentList: React.FC = () => {
       parentName: s.parentName || '', 
       parentPhone: s.parentPhone || '', 
       notes: s.notes || '', 
+      sessionPrice: s.sessionPrice?.toString() || '',
       fixedSchedule: [...s.fixedSchedule] 
     });
     setShowModal(true);
@@ -75,10 +77,14 @@ const StudentList: React.FC = () => {
   // حفظ البيانات
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const studentData = {
+      ...formData,
+      sessionPrice: formData.sessionPrice ? Number(formData.sessionPrice) : 0,
+    };
     if (editingStudent) {
-      updateStudent({ ...editingStudent, ...formData });
+      updateStudent({ ...editingStudent, ...studentData });
     } else {
-      addStudent({ ...formData, id: Date.now().toString(), paidAmount: 0 });
+      addStudent({ ...studentData, id: Date.now().toString(), paidAmount: 0 });
     }
     setShowModal(false);
   };
@@ -149,6 +155,10 @@ const StudentList: React.FC = () => {
                     <p className="text-[9px] text-slate-500 font-black uppercase">السن</p>
                     <p className="text-xs text-white font-bold">{s.age ? `${s.age} سنة` : 'غير محدد'}</p>
                   </div>
+                  <div className="space-y-1">
+                    <p className="text-[9px] text-slate-500 font-black uppercase">سعر الحصة</p>
+                    <p className="text-xs text-white font-bold">{s.sessionPrice ? `${s.sessionPrice} ج.م` : 'غير محدد'}</p>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -208,6 +218,7 @@ const StudentList: React.FC = () => {
 
               <input type="number" placeholder="السن" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white" value={formData.age} onChange={e => setFormData({...formData, age: e.target.value})} />
               
+              <input type="number" placeholder="سعر الحصة (جنيه)" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white" value={formData.sessionPrice} onChange={e => setFormData({...formData, sessionPrice: e.target.value})} />
               <textarea placeholder="ملاحظات..." className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white h-20" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} />
 
               {/* اختيار المواعيد الثابتة */}

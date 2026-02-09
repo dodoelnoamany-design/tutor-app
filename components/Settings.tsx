@@ -18,6 +18,16 @@ const Settings: React.FC = () => {
   const [lastBackupDate, setLastBackupDate] = useState(localStorage.getItem('last_auto_backup') || 'لم يتم بعد');
 
   // --- 1. تحديث صورة البروفايل ---
+  const handleResetColors = () => {
+    setCustomColors({
+      primary: '#3b82f6',
+      secondary: '#1e40af',
+      accent: '#f59e0b',
+      background: '#020617',
+      text: '#f8fafc',
+    });
+  };
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -64,6 +74,7 @@ const Settings: React.FC = () => {
   return (
     <div className="space-y-6 pb-28 px-4 pt-6 page-transition text-right" dir="rtl">
       
+                <button className="mt-4 bg-blue-600 text-white py-2 px-6 rounded-2xl font-black" onClick={handleResetColors}>إعادة الألوان الافتراضية</button>
       {/* هيدر الترحيب */}
       <div className="flex items-center gap-4 bg-blue-600/10 p-4 rounded-[2rem] border border-blue-500/20">
         <img 
@@ -132,7 +143,7 @@ const Settings: React.FC = () => {
                   {group.items.map(t => (
                     <button 
                       key={t.name}
-                      onClick={() => setCustomColors({ primary: t.primary, accent: t.accent })}
+                      onClick={() => setCustomColors({ primary: t.primary, accent: t.accent, background: customColors.background, text: customColors.text })}
                       className="flex items-center gap-2 p-3 bg-slate-900/50 rounded-xl border border-white/5"
                     >
                       <div className="w-4 h-4 rounded-full" style={{ backgroundColor: t.primary }} />
@@ -162,17 +173,20 @@ const Settings: React.FC = () => {
         </div>
         
         {notificationsEnabled && (
-          <div className="flex items-center justify-between bg-black/20 p-4 rounded-2xl border border-white/5 animate-in zoom-in">
-            <span className="text-[11px] text-slate-400 font-bold">تنبيه قبل الدرس بـ:</span>
-            <div className="flex items-center gap-2">
-              <input 
-                type="number" 
-                className="w-14 bg-slate-900 border border-blue-500/30 rounded-lg p-2 text-white text-center font-black text-sm"
-                value={notificationMinutes}
-                onChange={(e) => setNotificationMinutes(Number(e.target.value))}
-              />
-              <span className="text-[11px] text-slate-400 font-bold">دقيقة</span>
+          <div>
+            <div className="flex items-center justify-between bg-black/20 p-4 rounded-2xl border border-white/5 animate-in zoom-in">
+              <span className="text-[11px] text-slate-400 font-bold">تنبيه قبل الدرس بـ:</span>
+              <div className="flex items-center gap-2">
+                <input 
+                  type="number" 
+                  className="w-14 bg-slate-900 border border-blue-500/30 rounded-lg p-2 text-white text-center font-black text-sm"
+                  value={notificationMinutes}
+                  onChange={(e) => setNotificationMinutes(Number(e.target.value))}
+                />
+                <span className="text-[11px] text-slate-400 font-bold">دقيقة</span>
+              </div>
             </div>
+            <span className="text-xs text-blue-400 font-bold">سيتم إرسال تنبيه قبل الحصة بعدد الدقائق المحدد</span>
           </div>
         )}
       </section>
