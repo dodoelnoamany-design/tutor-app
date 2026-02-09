@@ -165,21 +165,10 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      // انتهى تصدير النسخة الاحتياطية للويب
-      } else {
-        // دعم النسخ القديمة جداً
-        if (backup.students) localStorage.setItem('tutor_students_v3', JSON.stringify(backup.students));
-        if (backup.sessions) localStorage.setItem('tutor_sessions_v3', JSON.stringify(backup.sessions));
-        if (backup.schoolSessions) localStorage.setItem('tutor_school_sessions', JSON.stringify(backup.schoolSessions));
-      }
-      
-      alert('تمت استعادة كل البيانات بنجاح! سيتم الآن إعادة تحميل التطبيق.');
-      window.location.reload();
-      return true;
-    } catch (e) {
-      alert('خطأ: الملف الذي اخترته غير صحيح أو تالف.');
-      return false;
+      return;
     }
+    // دعم النسخ القديمة جداً (للنظام الأصلي)
+    // يمكن إضافة منطق إضافي هنا إذا لزم الأمر
   };
 
   const resetToDefaults = () => {
@@ -208,7 +197,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       notificationsEnabled, setNotificationsEnabled, systemNotificationsEnabled, setSystemNotificationsEnabled,
       notificationOffsetMinutes, setNotificationOffsetMinutes, autoBackupDays, setAutoBackupDays,
       autoBackupPath, setAutoBackupPath, customColors, setCustomColors, resetCustomColors,
-      teacherProfile, setTeacherProfile, exportData, importData, resetToDefaults,
+      teacherProfile, setTeacherProfile, exportData, resetToDefaults,
       notificationMinutes: notificationOffsetMinutes,
       setNotificationMinutes: setNotificationOffsetMinutes
     }}>
