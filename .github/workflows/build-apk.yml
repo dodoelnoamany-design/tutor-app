@@ -1,0 +1,77 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: 'npm'
+
+
+    - name: Clean npm cache and dependencies
+      run: |
+        npm cache clean --force
+        rm -rf node_modules package-lock.json
+        npm install
+
+
+    - name: Build web assets
+      run: npm run build
+
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '21'
+
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+      with:
+        api-level: 34
+        build-tools: 34.0.0
+
+    - name: Verify web build output
+      run: |
+        echo "Listing repository root:"
+        ls -la
+        echo "Listing dist/:"
+        ls -la dist || true
+        if [ ! -f dist/index.html ]; then
+          echo "dist/index.html not found — running npm run build again"
+          npm run build
+        fi
+
+    - name: Sync Capacitor
+      run: npx cap sync android
+
+    - name: Clean Android build outputs
+      run: |
+        rm -rf android/app/build/outputs/apk/debug/*
+        rm -rf android/app/build/intermediates
+
+
+    - name: Build APK
+      run: |
+        cd android
+        chmod +x gradlew
+        ./gradlew clean
+        ./gradlew assembleDebug
+
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-debug.apk
+        path: android/app/build/outputs/apk/debug/app-debug.apk
