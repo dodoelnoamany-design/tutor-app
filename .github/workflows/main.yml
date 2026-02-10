@@ -57,6 +57,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: TutorMaster-App
-          path: android/app/build/outputs/apk/release/app-release.apk
+          path: android/app/build/outputs/**/*.apk
 
       # يمكنك إضافة خطوة لرفع الـ APK إلى artifacts أو Google Drive أو أي مكان آخر
