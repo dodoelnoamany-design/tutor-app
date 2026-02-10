@@ -30,11 +30,11 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
-      - name: Build Release APK
+      - name: Build Release APK (capture log)
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleRelease
+          ./gradlew clean assembleRelease --stacktrace 2>&1 | tee gradle.log
 
       - name: Sign APK
         uses: r0adkll/sign-android-release@v1
@@ -51,3 +51,10 @@ jobs:
         with:
           name: TutorMaster-Final
           path: android/app/build/outputs/apk/release/*-signed.apk
+
+      - name: Upload Gradle Log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle-log
+          path: android/gradle.log
