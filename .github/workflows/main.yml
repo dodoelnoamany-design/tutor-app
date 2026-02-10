@@ -39,7 +39,15 @@ jobs:
           cd android
           chmod +x gradlew
 
-      - name: Build APK
-        run: cd android && ./gradlew assembleRelease
+      - name: Build APK (with debug flags)
+        run: |
+          cd android
+          ./gradlew assembleRelease --stacktrace --info 2>&1 | tee gradle.log
+
+      - name: Upload Gradle log
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle-log
+          path: android/gradle.log
 
       # يمكنك إضافة خطوة لرفع الـ APK إلى artifacts أو Google Drive أو أي مكان آخر
