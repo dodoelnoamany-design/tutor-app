@@ -18,22 +18,23 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab }) => {
   ];
 
   return (
-    <div className="fixed bottom-6 left-0 right-0 z-[100] px-4 pointer-events-none flex justify-center">
-      <nav className="nav-glass max-w-lg w-full h-[76px] rounded-[2.5rem] flex items-center justify-around px-2 border border-white/10 pointer-events-auto">
+    <div className="fixed bottom-4 sm:bottom-6 left-0 right-0 z-[100] px-2 sm:px-4 pointer-events-none flex justify-center">
+      <nav className="nav-glass max-w-lg w-full min-w-[320px] h-[76px] sm:h-[76px] rounded-[2.5rem] flex items-center px-2 border border-white/10 pointer-events-auto overflow-x-auto no-scrollbar">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
             <button 
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`relative flex flex-col items-center justify-center p-3 transition-all duration-300 ${isActive ? 'text-blue-500' : 'text-slate-500 hover:text-slate-300'}`}
+              className={`relative inline-flex flex-col items-center justify-center p-2 sm:p-3 transition-all duration-300 flex-shrink-0 min-w-[56px] max-w-[110px] ${isActive ? 'text-blue-500' : 'text-slate-500 hover:text-slate-300'}`}
+              aria-label={tab.label}
             >
               {isActive && (
                 <div className="absolute -top-1 w-1.5 h-1.5 bg-blue-500 rounded-full active-dot"></div>
               )}
               <svg 
                 xmlns="http://www.w3.org/2000/svg" 
-                className={`h-5 w-5 transition-all duration-300 ${isActive ? 'scale-125 translate-y-[-2px]' : ''}`} 
+                className={`h-5 w-5 sm:h-6 sm:w-6 transition-all duration-300 ${isActive ? 'scale-125 -translate-y-0.5' : ''}`} 
                 fill="none" 
                 viewBox="0 0 24 24" 
                 stroke="currentColor" 
@@ -41,7 +42,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab }) => {
               >
                 <path strokeLinecap="round" strokeLinejoin="round" d={tab.icon} />
               </svg>
-              <span className={`text-[8px] font-black mt-1.5 transition-all ${isActive ? 'opacity-100' : 'opacity-60'}`}>
+              <span className={`text-xs sm:text-[11px] font-black mt-1 transition-all block truncate max-w-[72px] whitespace-nowrap ${isActive ? 'opacity-100' : 'opacity-60'}`}>
                 {tab.label}
               </span>
             </button>
