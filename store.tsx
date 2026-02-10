@@ -350,7 +350,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             price: original.price,
             status: SessionStatus.RESCHEDULED,
             originalSessionId: original.id,
-            note: `تعويض لحصة ${new Date(original.dateTime).toLocaleDateString('ar-EG')}`
+            note: `This session is postponed from ${new Date(original.dateTime).toLocaleDateString()}`
           };
 
           // replace the original in list with updatedOriginal, and add rescheduled

@@ -123,7 +123,8 @@ const SchoolSchedule: React.FC = () => {
   // إضافة أو تحديث حصة
   const handleAddSession = () => {
     if (formData.level) {
-      const toSave = { ...formData, name: formData.level, grade: formData.level, teacher: teacherProfile?.name || formData.teacher || '' } as any;
+      const teacherToSave = formData.teacher && formData.teacher.trim() ? formData.teacher.trim() : (teacherProfile?.name || '');
+      const toSave = { ...formData, name: formData.level, grade: formData.level, teacher: teacherToSave } as any;
       if (editingId) {
         updateSchoolSession({ ...toSave, id: editingId, createdAt: Date.now() });
         setEditingId(null);
@@ -337,7 +338,13 @@ const SchoolSchedule: React.FC = () => {
               onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
               className="bg-slate-900 border border-white/10 rounded-xl px-4 py-2 text-sm text-white outline-none focus:border-blue-500/50 transition-colors"
             />
-            <div className="flex items-center px-4 text-sm text-slate-400">المعلم: <span className="text-white font-black mr-2">{teacherProfile?.name || 'لم يتم تعيينه'}</span></div>
+            <input
+              type="text"
+              placeholder={teacherProfile?.name ? `المعلم (الإفتراضي: ${teacherProfile.name})` : 'المعلم (اختياري)'}
+              value={formData.teacher || ''}
+              onChange={(e) => setFormData({ ...formData, teacher: e.target.value })}
+              className="bg-slate-900 border border-white/10 rounded-xl px-4 py-2 text-sm text-white outline-none focus:border-blue-500/50 transition-colors"
+            />
           </div>
 
           <textarea
@@ -418,6 +425,11 @@ const SchoolSchedule: React.FC = () => {
                                 <span className="text-[9px] text-slate-400 mt-1 block" style={{ fontSize: `${8 * scheduleZoom}px` }}>
                                   {session.teacher || teacherProfile?.name || '—'}
                                 </span>
+                                {session.notes && (
+                                  <span className="text-[9px] text-slate-300 mt-1 block truncate" style={{ fontSize: `${7 * scheduleZoom}px` }}>
+                                    {session.notes}
+                                  </span>
+                                )}
                               </>
                             ) : null}
                             

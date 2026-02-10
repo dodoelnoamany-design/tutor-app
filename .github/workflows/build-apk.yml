@@ -58,19 +58,63 @@ jobs:
 
     - name: Clean Android build outputs
       run: |
-        rm -rf android/app/build/outputs/apk/debug/*
+        rm -rf android/app/build/outputs/apk/*
         rm -rf android/app/build/intermediates
 
-
-    - name: Build APK
+    - name: Build Release APK (unsigned)
+      env:
+        JAVA_HOME: /usr/lib/jvm/temurin-21-jdk
       run: |
         cd android
         chmod +x gradlew
         ./gradlew clean
-        ./gradlew assembleDebug
+        ./gradlew assembleRelease
 
-    - name: Upload APK
+    - name: Prepare keystore (from secrets)
+      if: secrets.ANDROID_KEYSTORE
+      run: |
+        echo "$ANDROID_KEYSTORE" | base64 --decode > release.keystore
+      env:
+        ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
+
+    - name: Sign APK (if keystore present)
+      run: |
+        set -e
+        APK_UNSIGNED="android/app/build/outputs/apk/release/app-release-unsigned.apk"
+        APK_SIGNED="android/app/build/outputs/apk/release/app-release-signed.apk"
+        if [ -f release.keystore ]; then
+          echo "Keystore found — signing release APK"
+          # find apksigner
+          APKSIGNER=$(find $ANDROID_SDK_ROOT -name apksigner -type f | head -n 1)
+          if [ -z "$APKSIGNER" ]; then
+            echo "apksigner not found in SDK, trying build-tools path"
+            APKSIGNER="$ANDROID_SDK_ROOT/build-tools/34.0.0/apksigner"
+          fi
+          chmod +x "$APKSIGNER"
+          "$APKSIGNER" sign --ks release.keystore --ks-key-alias "$KEY_ALIAS" --ks-pass pass:"$KEYSTORE_PASSWORD" --key-pass pass:"$KEY_PASSWORD" --out "$APK_SIGNED" "$APK_UNSIGNED"
+        else
+          echo "No keystore provided — uploading unsigned APK"
+          APK_SIGNED="$APK_UNSIGNED"
+        fi
+      env:
+        KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+    - name: Verify signed APK and upload
+      run: |
+        ls -la android/app/build/outputs/apk/release || true
+        if [ -f android/app/build/outputs/apk/release/app-release-signed.apk ]; then
+          echo "Uploading signed APK"
+          echo "Signed APK path: android/app/build/outputs/apk/release/app-release-signed.apk"
+        else
+          echo "Signed APK not found, falling back to unsigned"
+        fi
+
+    - name: Upload APK artifact
       uses: actions/upload-artifact@v4
       with:
-        name: app-debug.apk
-        path: android/app/build/outputs/apk/debug/app-debug.apk
+        name: app-release.apk
+        path: |
+          android/app/build/outputs/apk/release/app-release-signed.apk
+          android/app/build/outputs/apk/release/app-release-unsigned.apk

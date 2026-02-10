@@ -8,6 +8,8 @@ const Dashboard: React.FC<{ onNavigate: (tab: any) => void }> = ({ onNavigate })
   const { getStats, getDailyIncome, getStudentById, notifications, clearNotifications, sessions } = useApp();
   const stats = getStats();
   const [showSummary, setShowSummary] = useState(false);
+  const [showPostponedModal, setShowPostponedModal] = useState(false);
+  const [showCancelledModal, setShowCancelledModal] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   // العبارات التحفيزية الشاملة للمعلمين (30 عبارة لضمان التنوع اليومي)
@@ -117,27 +119,89 @@ const Dashboard: React.FC<{ onNavigate: (tab: any) => void }> = ({ onNavigate })
         </div>
       </div>
 
+      {showPostponedModal && (
+        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-slate-950/95 backdrop-blur-2xl">
+          <div className="glass-3d w-full max-w-lg rounded-[2rem] p-6 border border-white/10 shadow-3xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-black text-white">تفاصيل الحصص المؤجلة</h3>
+              <button onClick={() => setShowPostponedModal(false)} className="text-slate-400 font-bold">إغلاق</button>
+            </div>
+            <div className="space-y-3 max-h-[60vh] overflow-auto">
+              {sessions.filter(s => s.status === SessionStatus.POSTPONED).length === 0 ? (
+                <p className="text-slate-500 font-bold">لا توجد حصص مؤجلة.</p>
+              ) : (
+                sessions.filter(s => s.status === SessionStatus.POSTPONED).map(s => (
+                  <div key={s.id} className="p-3 rounded-lg border border-white/5 bg-slate-900/40">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-black text-white">{getStudentById(s.studentId)?.name || 'طالب مجهول'}</div>
+                        <div className="text-[12px] text-slate-400">الميعاد الأصلي: {new Date(s.dateTime).toLocaleString('ar-EG')}</div>
+                      </div>
+                      <div className="text-[12px] text-amber-400 font-black">حالة: مؤجلة</div>
+                    </div>
+                    {s.note && <p className="mt-2 text-[13px] text-slate-300">{s.note}</p>}
+                    {s.originalSessionId && <p className="mt-1 text-[11px] text-slate-500">معرف الحصة الأصلية: {s.originalSessionId}</p>}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCancelledModal && (
+        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-slate-950/95 backdrop-blur-2xl">
+          <div className="glass-3d w-full max-w-lg rounded-[2rem] p-6 border border-white/10 shadow-3xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-black text-white">تفاصيل الإلغاءات اليوم</h3>
+              <button onClick={() => setShowCancelledModal(false)} className="text-slate-400 font-bold">إغلاق</button>
+            </div>
+            <div className="space-y-3 max-h-[60vh] overflow-auto">
+              {(() => {
+                const now = new Date(); now.setHours(0,0,0,0);
+                const cancelledToday = sessions.filter(s => s.status === SessionStatus.CANCELLED && (() => { const d = new Date(s.dateTime); d.setHours(0,0,0,0); return d.getTime() === now.getTime(); })());
+                if (cancelledToday.length === 0) return <p className="text-slate-500 font-bold">لا توجد إلغاءات اليوم.</p>;
+                return cancelledToday.map(s => (
+                  <div key={s.id} className="p-3 rounded-lg border border-white/5 bg-slate-900/40">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-black text-white">{getStudentById(s.studentId)?.name || 'طالب مجهول'}</div>
+                        <div className="text-[12px] text-slate-400">الموعد: {new Date(s.dateTime).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</div>
+                      </div>
+                      <div className="text-[12px] text-rose-400 font-black">ملغاة</div>
+                    </div>
+                    {s.note && <p className="mt-2 text-[13px] text-slate-300">{s.note}</p>}
+                  </div>
+                ));
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Stats Quick View */}
       <div className="grid grid-cols-2 gap-5">
         <div className="glass-3d p-6 rounded-[2.2rem] group hover:border-amber-500/40">
-          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 bg-amber-500/10 text-amber-500 rounded-2xl flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
+              <button onClick={() => setShowPostponedModal(true)} className="absolute inset-0" aria-label="عرض التفاصيل للحصص المؤجلة"></button>
           </div>
           <h4 className="text-3xl font-black text-white mb-1">{stats.pendingPostponed}</h4>
           <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">حصص مؤجلة</p>
         </div>
         
         <div className="glass-3d p-6 rounded-[2.2rem] group hover:border-rose-500/40">
-          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 bg-rose-500/10 text-rose-500 rounded-2xl flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </div>
+              <button onClick={() => setShowCancelledModal(true)} className="absolute inset-0" aria-label="عرض تفاصيل الإلغاءات"></button>
           </div>
           <h4 className="text-3xl font-black text-white mb-1">{stats.cancelledCount}</h4>
           <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">إلغاءات اليوم</p>

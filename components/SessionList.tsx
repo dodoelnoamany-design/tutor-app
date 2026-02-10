@@ -267,6 +267,11 @@ const SessionList: React.FC = () => {
             <p className="font-black text-white text-lg tracking-tighter leading-none">{session.price} <span className="text-[10px] text-blue-400">ج.م</span></p>
           </div>
         </div>
+        {session.note && (
+          <div className="mt-4">
+            <p className="text-[12px] text-slate-400 font-bold">{session.note}</p>
+          </div>
+        )}
 
         {isActionable(session.status) && (
           <div className="grid grid-cols-3 gap-3">
