@@ -71,7 +71,7 @@ jobs:
         ./gradlew assembleRelease
 
     - name: Prepare keystore (from secrets)
-      if: secrets.ANDROID_KEYSTORE
+      if: ${{ secrets.ANDROID_KEYSTORE != '' }}
       run: |
         echo "$ANDROID_KEYSTORE" | base64 --decode > release.keystore
       env:
