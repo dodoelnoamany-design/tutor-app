@@ -4,63 +4,56 @@ on:
   push:
     branches:
       - main
+      - master
 
 jobs:
   build:
-    name: Build & Sign Android APK
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
-    on:
-      push:
-        branches: [ main, master ]
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
 
-    jobs:
-      build:
-        runs-on: ubuntu-latest
-        permissions:
-          contents: write
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
 
-        steps:
-          - name: Checkout Source
-            uses: actions/checkout@v4
+      - name: Install Dependencies
+        run: npm install
 
-          - name: Setup Node.js
-            uses: actions/setup-node@v4
-            with:
-              node-version: 18
+      - name: Build Web Project
+        run: npm run build
 
-          - name: Install Dependencies
-            run: npm install
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
 
-          - name: Build Web Project
-            run: npm run build
+      - name: Sync Capacitor Android
+        run: npx cap sync android
 
-          - name: Setup Java
-            uses: actions/setup-java@v4
-            with:
-              java-version: '17'
-              distribution: 'temurin'
+      - name: Build Android Release
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease --stacktrace
 
-          - name: Sync Capacitor Android
-            run: npx cap sync android
+      - name: Sign APK
+        uses: r0adkll/sign-android-release@v1
+        id: sign_app
+        with:
+          releaseDirectory: android/app/build/outputs/apk/release
+          signingKeyBase64: ${{ secrets.ANDROID_KEYSTORE }}
+          alias: ${{ secrets.KEY_ALIAS }}
+          keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
+          keyPassword: ${{ secrets.KEY_PASSWORD }}
 
-          - name: Build Android Release
-            run: |
-              cd android
-              chmod +x gradlew
-              ./gradlew assembleRelease --stacktrace
-
-          - name: Sign APK
-            uses: r0adkll/sign-android-release@v1
-            id: sign_app
-            with:
-              releaseDirectory: android/app/build/outputs/apk/release
-              signingKeyBase64: ${{ secrets.ANDROID_KEYSTORE }}
-              alias: ${{ secrets.KEY_ALIAS }}
-              keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
-              keyPassword: ${{ secrets.KEY_PASSWORD }}
-
-          - name: Upload Signed APK
-            uses: actions/upload-artifact@v4
-            with:
-              name: TutorMaster-Official-App
-              path: ${{ steps.sign_app.outputs.signedReleaseFile }}
+      - name: Upload Signed APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: TutorMaster-Official-App
+          path: android/app/build/outputs/apk/release/*-signed.apk
