@@ -20,6 +20,9 @@ jobs:
       - name: Clean install dependencies (npm ci)
         run: npm ci
 
+      - name: Build web assets
+        run: npm run build
+
       - name: Clean Gradle cache
         run: rm -rf ~/.gradle/caches
 
