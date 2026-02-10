@@ -5,8 +5,7 @@ import { SchoolSession } from '../types';
 
 const SchoolSchedule: React.FC = () => {
   const { schoolSessions, addSchoolSession, updateSchoolSession, deleteSchoolSession, getSchoolSessionByDay } = useSchool();
-  const { scheduleZoom, setScheduleZoom } = useSettings();
-  const [showZoomMenu, setShowZoomMenu] = useState(false);
+  const { scheduleZoom, setScheduleZoom, teacherProfile } = useSettings();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -24,17 +23,67 @@ const SchoolSchedule: React.FC = () => {
     teacher: ''
   });
 
-  // حساب وقت النهاية تلقائياً عند تغيير وقت البداية أو المدة
+  const [handlePos, setHandlePos] = useState<{ x: number; y: number }>(() => {
+    try { return JSON.parse(localStorage.getItem('school_handle_pos') || 'null') || { x: 0, y: 0 }; } catch { return { x: 0, y: 0 }; }
+  });
+  const [dragging, setDragging] = useState(false);
+  const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
+
   useEffect(() => {
-    if (formData.time && formData.duration) {
-      const [hours, minutes] = formData.time.split(':').map(Number);
-      const totalMinutes = hours * 60 + minutes + formData.duration;
-      const endHours = Math.floor(totalMinutes / 60);
-      const endMinutes = totalMinutes % 60;
-      const endTime = `${endHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}`;
-      setFormData(prev => ({ ...prev, endTime }));
-    }
-  }, [formData.time, formData.duration]);
+    if (!dragging) localStorage.setItem('school_handle_pos', JSON.stringify(handlePos));
+  }, [dragging, handlePos]);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!dragging) return;
+      setHandlePos({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
+    };
+    const onUp = () => { if (dragging) setDragging(false); };
+    const onTouchMove = (e: TouchEvent) => { if (!dragging) return; setHandlePos({ x: e.touches[0].clientX - dragStart.x, y: e.touches[0].clientY - dragStart.y }); };
+    const onTouchEnd = () => { if (dragging) setDragging(false); };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchmove', onTouchMove);
+    document.addEventListener('touchend', onTouchEnd);
+    return () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      document.removeEventListener('touchmove', onTouchMove);
+      document.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [dragging, dragStart]);
+
+  // Zoom state for draggable resize button
+  const [showZoomMenu, setShowZoomMenu] = useState(false);
+  const [zoomPos, setZoomPos] = useState<{ x: number; y: number }>(() => {
+    try { return JSON.parse(localStorage.getItem('school_zoom_pos') || 'null') || { x: 60, y: 80 }; } catch { return { x: 60, y: 80 }; }
+  });
+  const [zoomDragging, setZoomDragging] = useState(false);
+  const [zoomDragStart, setZoomDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const onZoomMove = (e: MouseEvent) => { if (!zoomDragging) return; setZoomPos({ x: e.clientX - zoomDragStart.x, y: e.clientY - zoomDragStart.y }); };
+    const onZoomUp = () => { if (zoomDragging) setZoomDragging(false); };
+    const onZoomTouchMove = (e: TouchEvent) => { if (!zoomDragging) return; setZoomPos({ x: e.touches[0].clientX - zoomDragStart.x, y: e.touches[0].clientY - zoomDragStart.y }); };
+    const onZoomTouchEnd = () => { if (zoomDragging) setZoomDragging(false); };
+    document.addEventListener('mousemove', onZoomMove);
+    document.addEventListener('mouseup', onZoomUp);
+    document.addEventListener('touchmove', onZoomTouchMove);
+    document.addEventListener('touchend', onZoomTouchEnd);
+    return () => {
+      document.removeEventListener('mousemove', onZoomMove);
+      document.removeEventListener('mouseup', onZoomUp);
+      document.removeEventListener('touchmove', onZoomTouchMove);
+      document.removeEventListener('touchend', onZoomTouchEnd);
+    };
+  }, [zoomDragging, zoomDragStart]);
+
+  useEffect(() => { if (!zoomDragging) localStorage.setItem('school_zoom_pos', JSON.stringify(zoomPos)); }, [zoomDragging, zoomPos]);
+
+  
+
+  // endTime is entered explicitly by the user (from/to); do not auto-calc from duration
 
   const days = [
     { name: 'السبت', index: 6 },
@@ -73,12 +122,13 @@ const SchoolSchedule: React.FC = () => {
 
   // إضافة أو تحديث حصة
   const handleAddSession = () => {
-    if (formData.name && formData.level) {
+    if (formData.level) {
+      const toSave = { ...formData, name: formData.level, grade: formData.level, teacher: teacherProfile?.name || formData.teacher || '' } as any;
       if (editingId) {
-        updateSchoolSession({ ...formData, id: editingId, createdAt: Date.now() });
+        updateSchoolSession({ ...toSave, id: editingId, createdAt: Date.now() });
         setEditingId(null);
       } else {
-        addSchoolSession(formData);
+        addSchoolSession(toSave);
       }
       setFormData({
         name: '',
@@ -177,7 +227,7 @@ const SchoolSchedule: React.FC = () => {
           <h2 className="text-2xl font-black text-white">جدول الحصص المدرسية</h2>
           <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">الجدول الأسبوعي للحصص</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
           <button
             onClick={() => setShowAddForm(true)}
             className="w-10 h-10 rounded-xl glass-3d flex items-center justify-center text-blue-400 hover:border-blue-500/30 transition-all"
@@ -186,19 +236,28 @@ const SchoolSchedule: React.FC = () => {
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
             </svg>
           </button>
-          <div className="relative">
+
+          {/* Draggable zoom button */}
+          <div
+            className="fixed z-40"
+            style={{ left: zoomPos.x || 60, top: (zoomPos.y || 80) - 8 }}
+            onMouseDown={(e) => { setZoomDragging(true); setZoomDragStart({ x: e.clientX - (zoomPos.x || 60), y: e.clientY - (zoomPos.y || 80) }); }}
+            onTouchStart={(e: any) => { setZoomDragging(true); setZoomDragStart({ x: e.touches[0].clientX - (zoomPos.x || 60), y: e.touches[0].clientY - (zoomPos.y || 80) }); }}
+          >
             <button
-              onClick={() => setShowZoomMenu(!showZoomMenu)}
-              className="w-10 h-10 rounded-xl glass-3d flex items-center justify-center text-slate-400 hover:text-blue-400 hover:border-blue-500/30 transition-all"
+              onClick={() => setShowZoomMenu(prev => !prev)}
+              className="w-11 h-11 rounded-full glass-3d flex items-center justify-center text-slate-400 hover:text-blue-400 hover:border-blue-500/30 transition-all"
+              title={`حجم الجدول: ${(scheduleZoom * 100).toFixed(0)}%`}
             >
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
               </svg>
             </button>
+
             {showZoomMenu && (
-              <div className="absolute top-12 right-0 bg-slate-900 border border-white/10 rounded-xl shadow-2xl p-3 space-y-2 z-50 min-w-[200px]">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-[11px] font-black text-slate-300">التصغير/التكبير</span>
+              <div className="fixed z-50 bg-slate-900 border border-white/10 rounded-xl shadow-2xl p-3 space-y-2" style={{ left: Math.max(8, (zoomPos.x || 60) - 20), top: (zoomPos.y || 80) + 44, minWidth: 220, maxWidth: '90vw', maxHeight: '80vh', overflow: 'auto' }}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[11px] font-black text-slate-300">حجم الجدول</span>
                   <span className="text-[10px] font-black text-blue-400">{(scheduleZoom * 100).toFixed(0)}%</span>
                 </div>
                 <input
@@ -211,24 +270,9 @@ const SchoolSchedule: React.FC = () => {
                   className="w-full"
                 />
                 <div className="flex gap-2 pt-2 border-t border-white/5">
-                  <button
-                    onClick={() => setScheduleZoom(0.1)}
-                    className="flex-1 py-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-[10px] font-black text-slate-300 transition-all"
-                  >
-                    صغر
-                  </button>
-                  <button
-                    onClick={() => setScheduleZoom(1)}
-                    className="flex-1 py-2 rounded-lg bg-blue-600/30 hover:bg-blue-600/50 text-[10px] font-black text-blue-300 transition-all"
-                  >
-                    عادي
-                  </button>
-                  <button
-                    onClick={() => setScheduleZoom(2)}
-                    className="flex-1 py-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-[10px] font-black text-slate-300 transition-all"
-                  >
-                    كبر
-                  </button>
+                  <button onClick={() => { setScheduleZoom(0.1); setShowZoomMenu(false); }} className="flex-1 py-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-[10px] font-black text-slate-300">10%</button>
+                  <button onClick={() => { setScheduleZoom(1); setShowZoomMenu(false); }} className="flex-1 py-2 rounded-lg bg-blue-600/30 hover:bg-blue-600/50 text-[10px] font-black text-blue-300">100%</button>
+                  <button onClick={() => { setScheduleZoom(2); setShowZoomMenu(false); }} className="flex-1 py-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-[10px] font-black text-slate-300">200%</button>
                 </div>
               </div>
             )}
@@ -243,46 +287,13 @@ const SchoolSchedule: React.FC = () => {
             {editingId ? '✏️ تعديل الحصة' : '➕ إضافة حصة جديدة'}
           </h3>
           
-          <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-3">
             <input
               type="text"
-              placeholder="اسم الحصة"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="bg-slate-900 border border-white/10 rounded-xl px-4 py-2 text-sm text-white outline-none focus:border-blue-500/50 transition-colors"
-            />
-            <input
-              type="text"
-              placeholder="المستوى"
+              placeholder="المستوى (يظهر بشكل بارز)"
               value={formData.level}
               onChange={(e) => setFormData({ ...formData, level: e.target.value })}
-              className="bg-slate-900 border border-white/10 rounded-xl px-4 py-2 text-sm text-white outline-none focus:border-blue-500/50 transition-colors"
-            />
-            <input
-              type="text"
-              placeholder="الصف الدراسي"
-              value={formData.grade}
-              onChange={(e) => setFormData({ ...formData, grade: e.target.value })}
-              className="bg-slate-900 border border-white/10 rounded-xl px-4 py-2 text-sm text-white outline-none focus:border-blue-500/50 transition-colors"
-            />
-            <select
-              value={formData.boyGirl}
-              onChange={(e) => setFormData({ ...formData, boyGirl: e.target.value as 'boys' | 'girls' | 'mixed' })}
-              className="bg-slate-900 border border-white/10 rounded-xl px-4 py-2 text-sm text-white outline-none focus:border-blue-500/50 transition-colors"
-            >
-              <option value="mixed">مختلط</option>
-              <option value="boys">أولاد</option>
-              <option value="girls">بنات</option>
-            </select>
-            <input
-              type="number"
-              placeholder="المدة (دقيقة)"
-              value={formData.duration}
-              onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) || 60 })}
-              className="bg-slate-900 border border-white/10 rounded-xl px-4 py-2 text-sm text-white outline-none focus:border-blue-500/50 transition-colors"
-              min="15"
-              max="300"
-              step="15"
+              className="w-full bg-slate-900 border border-white/10 rounded-2xl px-5 py-4 text-2xl font-black text-white outline-none focus:border-blue-500/50 transition-colors"
             />
           </div>
 
@@ -321,18 +332,12 @@ const SchoolSchedule: React.FC = () => {
           <div className="grid grid-cols-2 gap-3">
             <input
               type="text"
-              placeholder="المادة"
+              placeholder="المادة (اختياري)"
               value={formData.subject || ''}
               onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
               className="bg-slate-900 border border-white/10 rounded-xl px-4 py-2 text-sm text-white outline-none focus:border-blue-500/50 transition-colors"
             />
-            <input
-              type="text"
-              placeholder="المعلم"
-              value={formData.teacher || ''}
-              onChange={(e) => setFormData({ ...formData, teacher: e.target.value })}
-              className="bg-slate-900 border border-white/10 rounded-xl px-4 py-2 text-sm text-white outline-none focus:border-blue-500/50 transition-colors"
-            />
+            <div className="flex items-center px-4 text-sm text-slate-400">المعلم: <span className="text-white font-black mr-2">{teacherProfile?.name || 'لم يتم تعيينه'}</span></div>
           </div>
 
           <textarea
@@ -399,20 +404,20 @@ const SchoolSchedule: React.FC = () => {
                           >
                             {session ? (
                               <>
-                                <span className="text-[9px] font-black text-white truncate w-full" style={{ fontSize: `${8 * scheduleZoom}px` }}>
-                                  {session.name}
+                                <span className="text-white font-extrabold truncate w-full" style={{ fontSize: `${14 * scheduleZoom}px`, lineHeight: 1 }}>
+                                  {session.level || session.name}
                                 </span>
-                                <span className="text-[7px] text-purple-400 opacity-80" style={{ fontSize: `${6 * scheduleZoom}px` }}>
+                                <span className="text-[11px] text-purple-200 opacity-90 mt-1 block" style={{ fontSize: `${10 * scheduleZoom}px` }}>
                                   {session.time} - {session.endTime || 'غير محدد'}
                                 </span>
-                                <span className="text-[7px] text-purple-400 opacity-80" style={{ fontSize: `${6 * scheduleZoom}px` }}>
-                                  {session.level}
-                                </span>
-                                {session.teacher && (
-                                  <span className="text-[6px] text-slate-400" style={{ fontSize: `${5 * scheduleZoom}px` }}>
-                                    {session.teacher}
+                                {session.subject && (
+                                  <span className="text-[10px] text-purple-100 opacity-80 block" style={{ fontSize: `${9 * scheduleZoom}px` }}>
+                                    {session.subject}
                                   </span>
                                 )}
+                                <span className="text-[9px] text-slate-400 mt-1 block" style={{ fontSize: `${8 * scheduleZoom}px` }}>
+                                  {session.teacher || teacherProfile?.name || '—'}
+                                </span>
                               </>
                             ) : null}
                             

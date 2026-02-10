@@ -1,5 +1,5 @@
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useApp } from '../store';
 import { useSettings } from '../themeStore';
 
@@ -7,6 +7,63 @@ const AppointmentsSchedule: React.FC = () => {
   const { students } = useApp();
   const { scheduleZoom, setScheduleZoom } = useSettings();
   const [showZoomMenu, setShowZoomMenu] = useState(false);
+  const [zoomPos, setZoomPos] = useState<{ x: number; y: number }>(() => {
+    try { return JSON.parse(localStorage.getItem('appointments_zoom_pos') || 'null') || { x: 60, y: 80 }; } catch { return { x: 60, y: 80 }; }
+  });
+  const [zoomDragging, setZoomDragging] = useState(false);
+  const [zoomDragStart, setZoomDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [handlePos, setHandlePos] = useState<{ x: number; y: number }>(() => {
+    try { return JSON.parse(localStorage.getItem('appointments_handle_pos') || 'null') || { x: 0, y: 0 }; } catch { return { x: 0, y: 0 }; }
+  });
+  const [dragging, setDragging] = useState(false);
+  const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  useEffect(() => {
+    if (!dragging) localStorage.setItem('appointments_handle_pos', JSON.stringify(handlePos));
+  }, [dragging, handlePos]);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!dragging) return;
+      setHandlePos({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
+    };
+    const onUp = () => { if (dragging) setDragging(false); };
+    const onTouchMove = (e: TouchEvent) => { if (!dragging) return; setHandlePos({ x: e.touches[0].clientX - dragStart.x, y: e.touches[0].clientY - dragStart.y }); };
+    const onTouchEnd = () => { if (dragging) setDragging(false); };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchmove', onTouchMove);
+    document.addEventListener('touchend', onTouchEnd);
+    return () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      document.removeEventListener('touchmove', onTouchMove);
+      document.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [dragging, dragStart]);
+
+  // Zoom draggable handling and persistence
+  useEffect(() => {
+    const onZoomMove = (e: MouseEvent) => { if (!zoomDragging) return; setZoomPos({ x: e.clientX - zoomDragStart.x, y: e.clientY - zoomDragStart.y }); };
+    const onZoomUp = () => { if (zoomDragging) setZoomDragging(false); };
+    const onZoomTouchMove = (e: TouchEvent) => { if (!zoomDragging) return; setZoomPos({ x: e.touches[0].clientX - zoomDragStart.x, y: e.touches[0].clientY - zoomDragStart.y }); };
+    const onZoomTouchEnd = () => { if (zoomDragging) setZoomDragging(false); };
+    document.addEventListener('mousemove', onZoomMove);
+    document.addEventListener('mouseup', onZoomUp);
+    document.addEventListener('touchmove', onZoomTouchMove);
+    document.addEventListener('touchend', onZoomTouchEnd);
+    return () => {
+      document.removeEventListener('mousemove', onZoomMove);
+      document.removeEventListener('mouseup', onZoomUp);
+      document.removeEventListener('touchmove', onZoomTouchMove);
+      document.removeEventListener('touchend', onZoomTouchEnd);
+    };
+  }, [zoomDragging, zoomDragStart]);
+
+  useEffect(() => { if (!zoomDragging) localStorage.setItem('appointments_zoom_pos', JSON.stringify(zoomPos)); }, [zoomDragging, zoomPos]);
+
+  // persist handle position when not dragging
 
   // أيام الأسبوع بالكامل
   const allDays = [
@@ -97,21 +154,27 @@ const AppointmentsSchedule: React.FC = () => {
           <h2 className="text-2xl font-black text-white">خريطة المواعيد الثابتة</h2>
           <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">يتم عرض الأيام والساعات المشغولة فقط</p>
         </div>
-        {/* Zoom Controls */}
-        <div className="relative">
+        {/* Draggable zoom/moveable resize button */}
+        <div
+          className="fixed z-40"
+          style={{ left: zoomPos.x || 60, top: (zoomPos.y || 80) - 8 }}
+          onMouseDown={(e) => { setZoomDragging(true); setZoomDragStart({ x: e.clientX - (zoomPos.x || 60), y: e.clientY - (zoomPos.y || 80) }); }}
+          onTouchStart={(e: any) => { setZoomDragging(true); setZoomDragStart({ x: e.touches[0].clientX - (zoomPos.x || 60), y: e.touches[0].clientY - (zoomPos.y || 80) }); }}
+        >
           <button
-            onClick={() => setShowZoomMenu(!showZoomMenu)}
-            className="w-10 h-10 rounded-xl glass-3d flex items-center justify-center text-slate-400 hover:text-blue-400 hover:border-blue-500/30 transition-all"
-            title={`التصغير/التكبير: ${(scheduleZoom * 100).toFixed(0)}%`}
+            onClick={() => setShowZoomMenu(prev => !prev)}
+            className="w-11 h-11 rounded-full glass-3d flex items-center justify-center text-slate-400 hover:text-blue-400 hover:border-blue-500/30 transition-all"
+            title={`حجم الجدول: ${(scheduleZoom * 100).toFixed(0)}%`}
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
             </svg>
           </button>
+
           {showZoomMenu && (
-            <div className="absolute top-12 left-0 bg-slate-900 border border-white/10 rounded-xl shadow-2xl p-3 space-y-2 z-50 min-w-[200px]">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-[11px] font-black text-slate-300">التصغير/التكبير</span>
+            <div className="fixed z-50 bg-slate-900 border border-white/10 rounded-xl shadow-2xl p-3 space-y-2" style={{ left: Math.max(8, (zoomPos.x || 60) - 20), top: (zoomPos.y || 80) + 44, minWidth: 220, maxWidth: '90vw', maxHeight: '80vh', overflow: 'auto' }}>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[11px] font-black text-slate-300">حجم الجدول</span>
                 <span className="text-[10px] font-black text-blue-400">{(scheduleZoom * 100).toFixed(0)}%</span>
               </div>
               <input
@@ -124,24 +187,9 @@ const AppointmentsSchedule: React.FC = () => {
                 className="w-full"
               />
               <div className="flex gap-2 pt-2 border-t border-white/5">
-                <button
-                  onClick={() => setScheduleZoom(0.1)}
-                  className="flex-1 py-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-[10px] font-black text-slate-300 transition-all"
-                >
-                  صغر
-                </button>
-                <button
-                  onClick={() => setScheduleZoom(1)}
-                  className="flex-1 py-2 rounded-lg bg-blue-600/30 hover:bg-blue-600/50 text-[10px] font-black text-blue-300 transition-all"
-                >
-                  عادي
-                </button>
-                <button
-                  onClick={() => setScheduleZoom(2)}
-                  className="flex-1 py-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-[10px] font-black text-slate-300 transition-all"
-                >
-                  كبر
-                </button>
+                <button onClick={() => { setScheduleZoom(0.1); setShowZoomMenu(false); }} className="flex-1 py-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-[10px] font-black text-slate-300">10%</button>
+                <button onClick={() => { setScheduleZoom(1); setShowZoomMenu(false); }} className="flex-1 py-2 rounded-lg bg-blue-600/30 hover:bg-blue-600/50 text-[10px] font-black text-blue-300">100%</button>
+                <button onClick={() => { setScheduleZoom(2); setShowZoomMenu(false); }} className="flex-1 py-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 text-[10px] font-black text-slate-300">200%</button>
               </div>
             </div>
           )}
@@ -158,7 +206,7 @@ const AppointmentsSchedule: React.FC = () => {
               <tr>
                 <th className="pb-3" style={{ width: `${80 * scheduleZoom}px` }}></th>
                 {activeDays.map(day => (
-                  <th key={day.dayIndex} className="pb-3" style={{ minWidth: `${120 * scheduleZoom}px` }}>
+                  <th key={day.dayIndex} className="pb-3" style={{ minWidth: `${140 * scheduleZoom}px` }}>
                     <div className="bg-slate-900 border border-white/10 rounded-xl py-2 text-[10px] font-black text-blue-400 shadow-sm" style={{ padding: `${8 * scheduleZoom}px ${12 * scheduleZoom}px`, fontSize: `${10 * scheduleZoom}px` }}>
                       <div className="text-sm font-black">{day.name}</div>
                       <div className="text-[10px] text-slate-400 mt-1">{day.date.toLocaleDateString('ar-EG')}</div>
@@ -221,7 +269,7 @@ const AppointmentsSchedule: React.FC = () => {
         <div className="space-y-1">
           <p className="text-[11px] text-slate-300 font-black">الجدول الذكي</p>
           <p className="text-[10px] text-slate-500 font-bold leading-relaxed">
-            استخدم أزرار التصغير والتكبير لتحكم في عرض الجدول. يمكنك تصغيره لرؤية الجدول كاملاً على الشاشة.
+            يتم عرض مواعيد الطلاب المجدولة هنا وفقاً للأوقات المحددة.
           </p>
         </div>
       </div>

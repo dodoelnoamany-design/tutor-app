@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../store';
+import { useSettings } from '../themeStore';
 import { DayTime, Student } from '../types';
 
 const StudentList: React.FC = () => {
@@ -26,6 +27,8 @@ const StudentList: React.FC = () => {
   });
   
   const daysAr = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+
+  const { theme } = useSettings();
 
   // حالات تعديل الوقت السريع
   const [quickTimeModal, setQuickTimeModal] = useState(false);
@@ -232,7 +235,7 @@ const StudentList: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <input type="text" placeholder="اسم ولي الأمر" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white" value={formData.parentName} onChange={e => setFormData({...formData, parentName: e.target.value})} />
-                <input type="tel" placeholder="رقم ولي الأمر" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white" value={formData.parentPhone} onChange={e => setFormData({...formData, parentPhone: e.target.value})} />
+                <input type="tel" placeholder="رقم ولي الأمر" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white text-right" value={formData.parentPhone} onChange={e => setFormData({...formData, parentPhone: e.target.value})} />
               </div>
 
               <input type="number" placeholder="السن" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white text-right" value={formData.age} onChange={e => setFormData({...formData, age: e.target.value})} />
@@ -261,7 +264,7 @@ const StudentList: React.FC = () => {
                 {formData.fixedSchedule.map(fd => (
                   <div key={fd.day} className="flex items-center justify-between bg-slate-900/50 p-2 rounded-xl border border-white/5">
                     <span className="text-[10px] font-bold text-white pr-2">{daysAr[fd.day]}</span>
-                    <input type="time" className="bg-slate-800 text-white text-xs p-1.5 rounded-lg outline-none" value={fd.time} onChange={e => setFormData({...formData, fixedSchedule: formData.fixedSchedule.map(item => item.day === fd.day ? {...item, time: e.target.value} : item)})} />
+                    <input type="time" className={`${theme === 'light' ? 'bg-white text-black' : 'bg-slate-800 text-white'} text-xs p-1.5 rounded-lg outline-none`} value={fd.time} onChange={e => setFormData({...formData, fixedSchedule: formData.fixedSchedule.map(item => item.day === fd.day ? {...item, time: e.target.value} : item)})} />
                   </div>
                 ))}
               </div>

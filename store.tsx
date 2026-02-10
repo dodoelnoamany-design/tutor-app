@@ -352,12 +352,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const getStudentById = (id: string) => students.find(s => s.id === id);
 
   const getDailySessions = (dateStr: string) => {
-    return sessions.filter(s => s.dateTime.startsWith(dateStr));
+    // Compare by local date to match device phone date (avoid UTC mismatch)
+    const formatLocal = (d: Date) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+    return sessions.filter(s => {
+      try {
+        const sd = new Date(s.dateTime);
+        return formatLocal(sd) === dateStr;
+      } catch { return false; }
+    });
   };
 
   const getDailyIncome = (date: string) => {
+    const formatLocal = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     return sessions
-      .filter(s => s.dateTime.startsWith(date) && (s.status === SessionStatus.COMPLETED || s.status === SessionStatus.RESCHEDULED))
+      .filter(s => {
+        try { return formatLocal(new Date(s.dateTime)) === date && (s.status === SessionStatus.COMPLETED || s.status === SessionStatus.RESCHEDULED); } catch { return false; }
+      })
       .reduce((sum, s) => sum + s.price, 0);
   };
 
@@ -367,7 +382,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const getStats = () => {
     const now = new Date();
-    const today = now.toISOString().split('T')[0];
+    const _today = new Date(now); _today.setHours(0,0,0,0);
+    const today = `${_today.getFullYear()}-${String(_today.getMonth()+1).padStart(2,'0')}-${String(_today.getDate()).padStart(2,'0')}`;
     const todaySessions = getDailySessions(today);
     const totalIncome = sessions
       .filter(s => (s.status === SessionStatus.COMPLETED || s.status === SessionStatus.RESCHEDULED))

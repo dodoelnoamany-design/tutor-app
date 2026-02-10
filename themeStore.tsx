@@ -21,6 +21,8 @@ interface SettingsContextType {
   resetCustomColors: () => void;
   autoBackupDays: number;
   setAutoBackupDays: (days: number) => void;
+  scheduleZoom: number;
+  setScheduleZoom: (z: number) => void;
   teacherProfile: any;
   setTeacherProfile: (p: any) => void;
   exportData: () => Promise<void>;
@@ -59,6 +61,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const [autoBackupDays, setAutoBackupDays] = useState(Number(localStorage.getItem('tutor_auto_backup_days') || 0));
   const [teacherProfile, setTeacherProfileState] = useState(JSON.parse(localStorage.getItem('tutor_teacher_profile') || '{}'));
+  const [scheduleZoom, setScheduleZoomState] = useState<number>(() => Number(localStorage.getItem('tutor_schedule_zoom') || '1'));
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(() => localStorage.getItem('tutor_notifications_enabled') !== 'false');
   const [notificationMinutes, setNotificationMinutes] = useState<number>(() => Number(localStorage.getItem('tutor_notification_offset_minutes') || '30'));
 
@@ -87,7 +90,13 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     localStorage.setItem('tutor_custom_colors', JSON.stringify({...customColors, background: bgColor, text: textColor}));
   }, [theme, customColors]);
 
+  useEffect(() => {
+    localStorage.setItem('tutor_schedule_zoom', String(scheduleZoom));
+  }, [scheduleZoom]);
+
   const setTheme = (newTheme: ThemeType) => setThemeState(newTheme);
+
+  const setScheduleZoom = (z: number) => setScheduleZoomState(z);
 
   const setCustomColors = (colors: Partial<CustomColors>) => 
     setCustomColorsState(prev => ({ ...prev, ...colors }));
@@ -193,6 +202,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     <SettingsContext.Provider value={{
       theme, setTheme, customColors, setCustomColors, resetCustomColors,
       autoBackupDays, setAutoBackupDays, teacherProfile,
+      scheduleZoom, setScheduleZoom,
       setTeacherProfile: (p) => setTeacherProfileState({...teacherProfile, ...p}),
       exportData, importData, resetToDefaults: () => { localStorage.clear(); window.location.reload(); },
       notificationsEnabled, setNotificationsEnabled: (v: boolean) => setNotificationsEnabled(v),

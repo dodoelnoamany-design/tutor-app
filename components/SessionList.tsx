@@ -7,15 +7,25 @@ type FilterType = 'today' | 'tomorrow' | 'week' | 'month' | 'custom';
 
 const SessionList: React.FC = () => {
   const { sessions, updateSessionStatus, getStudentById, getDailySessions } = useApp();
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const formatLocalDate = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  const [selectedDate, setSelectedDate] = useState(() => formatLocalDate(new Date()));
   const [viewMode, setViewMode] = useState<'daily' | 'postponed'>('daily');
   const [filterType, setFilterType] = useState<FilterType>('today');
   const [showReschedule, setShowReschedule] = useState<string | null>(null);
   const [newReschedDate, setNewReschedDate] = useState('');
   const dateInputRef = useRef<HTMLInputElement>(null);
 
-  const todayStr = new Date().toISOString().split('T')[0];
-  const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+  // Use device-local date boundary: "today" starts at 00:00 local time
+  const _today = new Date();
+  _today.setHours(0, 0, 0, 0);
+  const todayStr = formatLocalDate(_today);
+  const tomorrowStr = formatLocalDate(new Date(_today.getTime() + 86400000));
 
   // منطق تصفية الحصص بناءً على الفلتر المختار
   const filteredSessions = useMemo(() => {
@@ -169,7 +179,7 @@ const SessionList: React.FC = () => {
             <div className="flex items-center justify-center gap-2 px-2">
                <span className="h-px bg-slate-800 flex-1"></span>
                <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.2em]">
-                 {getHeaderText()}
+                 {headerText}
                </p>
                <span className="h-px bg-slate-800 flex-1"></span>
             </div>

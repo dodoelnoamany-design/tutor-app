@@ -1,0 +1,87 @@
+name: CI Build
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+jobs:
+  build-web:
+    name: Build web (Vite)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (Vite)
+        run: npm run build --if-present
+
+      - name: Upload web artifact (dist)
+        uses: actions/upload-artifact@v3
+        with:
+          name: web-dist
+          path: dist
+          retention-days: 30
+
+  android-release:
+    name: Android (assembleRelease) - disabled by default
+    if: false
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_SDK_ROOT: ${{ runner.temp }}/android-sdk
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-cache-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-cache-${{ runner.os }}-
+
+      - name: Install Android SDK commandline tools and platforms
+        run: |
+          set -e
+          mkdir -p "$ANDROID_SDK_ROOT/cmdline-tools"
+          cd "$ANDROID_SDK_ROOT"
+          curl -sSfL "https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip" -o cmdline.zip
+          unzip -q cmdline.zip -d cmdline-tools
+          mv cmdline-tools/cmdline-tools cmdline-tools/latest || true
+          yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_SDK_ROOT" "platform-tools" "platforms;android-33" "build-tools;33.0.2"
+        shell: bash
+
+      - name: Build Android release (unsigned if no keystore provided)
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease -Porg.gradle.jvmargs="-Xmx2g"
+
+      - name: Upload Android APK(s)
+        uses: actions/upload-artifact@v3
+        with:
+          name: android-apk
+          path: android/app/build/outputs/**/*.apk
+          retention-days: 30
+
+# Notes:
+# - The 'android-release' job is disabled (if: false). Remove or change the condition to run it.
+# - For signed releases you must provide the keystore and signing configs via GitHub Secrets (e.g. KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD) and integrate them into the Gradle signing steps.
+# - Caches use hash-based keys (lockfile / gradle files) to avoid corrupting old caches; npm cache is handled by setup-node caching.
+# - Adjust Node / JDK / Android platform versions to match your target environment.
