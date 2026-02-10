@@ -101,20 +101,14 @@ jobs:
         KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
-    - name: Verify signed APK and upload
+    - name: Ensure release output directory exists
       run: |
-        ls -la android/app/build/outputs/apk/release || true
-        if [ -f android/app/build/outputs/apk/release/app-release-signed.apk ]; then
-          echo "Uploading signed APK"
-          echo "Signed APK path: android/app/build/outputs/apk/release/app-release-signed.apk"
-        else
-          echo "Signed APK not found, falling back to unsigned"
-        fi
+        mkdir -p android/app/build/outputs/apk/release
+        ls -la android/app/build/outputs || true
+        ls -la android/app/build/outputs/apk || true
 
-    - name: Upload APK artifact
+    - name: Upload signed APK artifact
       uses: actions/upload-artifact@v4
       with:
-        name: app-release.apk
-        path: |
-          android/app/build/outputs/apk/release/app-release-signed.apk
-          android/app/build/outputs/apk/release/app-release-unsigned.apk
+        name: TutorMaster-Official-App
+        path: android/app/build/outputs/apk/release/*.apk

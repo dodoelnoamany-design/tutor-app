@@ -42,10 +42,16 @@ jobs:
           cd android
           chmod +x gradlew
 
-      - name: Build APK (with debug flags)
+      - name: Build APK (release)
         run: |
           cd android
-          ./gradlew assembleRelease --stacktrace --info 2>&1 | tee gradle.log
+          ./gradlew clean assembleRelease --stacktrace --info
+
+      - name: Ensure release output directory exists
+        run: |
+          mkdir -p android/app/build/outputs/apk/release
+          ls -la android/app/build/outputs || true
+          ls -la android/app/build/outputs/apk || true
 
       - name: Sign Release APK
         uses: r0adkll/sign-android-release@v1
@@ -56,16 +62,10 @@ jobs:
           keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
 
-      - name: Upload Gradle log
+      - name: Upload signed APK
         uses: actions/upload-artifact@v4
         with:
-          name: gradle-log
-          path: android/gradle.log
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: TutorMaster-App
-          path: android/app/build/outputs/**/*-signed.apk
+          name: TutorMaster-Official-App
+          path: android/app/build/outputs/apk/release/*.apk
 
       # يمكنك إضافة خطوة لرفع الـ APK إلى artifacts أو Google Drive أو أي مكان آخر
