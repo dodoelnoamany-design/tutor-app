@@ -328,10 +328,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateSessionStatus = (sessionId: string, status: SessionStatus, newDate?: string) => {
     setSessions(prev => {
+      // protect already-postponed sessions from further changes
+      const orig = prev.find(s => s.id === sessionId);
+      if (!orig) return prev;
+      if (orig.status === SessionStatus.POSTPONED) return prev;
+
       const updated = prev.map(s => s.id === sessionId ? { ...s, status } : s);
+
       if (status === SessionStatus.POSTPONED && newDate) {
         const original = prev.find(s => s.id === sessionId);
         if (original) {
+          // mark original as postponed and add a human-friendly note with the new date
+          const postponedNote = `تم التاجيل ليوم ${new Date(newDate).toLocaleDateString('ar-EG')}`;
+          const updatedOriginal = { ...original, status: SessionStatus.POSTPONED, note: postponedNote };
+
           const rescheduled: Session = {
             id: Math.random().toString(36).substr(2, 9),
             studentId: original.studentId,
@@ -342,9 +352,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             originalSessionId: original.id,
             note: `تعويض لحصة ${new Date(original.dateTime).toLocaleDateString('ar-EG')}`
           };
-          return [...updated, rescheduled].sort((a, b) => a.dateTime.localeCompare(b.dateTime));
+
+          // replace the original in list with updatedOriginal, and add rescheduled
+          const others = prev.filter(s => s.id !== original.id);
+          return [...others, updatedOriginal, rescheduled].sort((a, b) => a.dateTime.localeCompare(b.dateTime));
         }
       }
+
       return updated;
     });
   };
@@ -359,10 +373,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const day = String(d.getDate()).padStart(2, '0');
       return `${y}-${m}-${day}`;
     };
+    // Exclude postponed sessions from the daily listing (they are moved to postponed bucket)
     return sessions.filter(s => {
       try {
         const sd = new Date(s.dateTime);
-        return formatLocal(sd) === dateStr;
+        return formatLocal(sd) === dateStr && s.status !== SessionStatus.POSTPONED;
       } catch { return false; }
     });
   };
