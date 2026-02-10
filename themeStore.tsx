@@ -198,6 +198,15 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     localStorage.setItem('tutor_notification_offset_minutes', String(notificationMinutes));
   }, [notificationMinutes]);
 
+  // Persist teacher profile to localStorage so it survives app reloads
+  useEffect(() => {
+    try {
+      localStorage.setItem('tutor_teacher_profile', JSON.stringify(teacherProfile || {}));
+    } catch (e) {
+      console.error('Failed to save teacher profile to localStorage', e);
+    }
+  }, [teacherProfile]);
+
   return (
     <SettingsContext.Provider value={{
       theme, setTheme, customColors, setCustomColors, resetCustomColors,
