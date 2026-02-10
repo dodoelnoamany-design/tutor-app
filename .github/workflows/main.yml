@@ -28,8 +28,11 @@ jobs:
 
       - name: Bump Android version (auto)
         run: |
-          sed -i 's/versionCode \([0-9]*\)/versionCode $((\1+1))/' android/app/build.gradle
-          sed -i 's/versionName "[0-9.]*"/versionName "$(date +%Y.%m.%d.%H%M)"/' android/app/build.gradle
+          current=$(grep -oP 'versionCode\s+\K[0-9]+' android/app/build.gradle || echo 1)
+          new=$((current+1))
+          vername=$(date +%Y.%m.%d.%H%M)
+          sed -i "s/versionCode [0-9]\+/versionCode ${new}/" android/app/build.gradle
+          sed -i "s/versionName \".*\"/versionName \"${vername}\"/" android/app/build.gradle
 
       - name: Capacitor Sync
         run: npx cap sync android
@@ -49,5 +52,11 @@ jobs:
         with:
           name: gradle-log
           path: android/gradle.log
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: TutorMaster-App
+          path: android/app/build/outputs/apk/release/app-release.apk
 
       # يمكنك إضافة خطوة لرفع الـ APK إلى artifacts أو Google Drive أو أي مكان آخر
