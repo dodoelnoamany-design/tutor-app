@@ -47,6 +47,15 @@ jobs:
           cd android
           ./gradlew assembleRelease --stacktrace --info 2>&1 | tee gradle.log
 
+      - name: Sign Release APK
+        uses: r0adkll/sign-android-release@v1
+        with:
+          releaseDirectory: android/app/build/outputs/apk/release
+          signingKeyBase64: ${{ secrets.ANDROID_KEYSTORE }}
+          alias: ${{ secrets.KEY_ALIAS }}
+          keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
+          keyPassword: ${{ secrets.KEY_PASSWORD }}
+
       - name: Upload Gradle log
         uses: actions/upload-artifact@v4
         with:
@@ -57,6 +66,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: TutorMaster-App
-          path: android/app/build/outputs/**/*.apk
+          path: android/app/build/outputs/**/*-signed.apk
 
       # يمكنك إضافة خطوة لرفع الـ APK إلى artifacts أو Google Drive أو أي مكان آخر
