@@ -125,6 +125,33 @@ const SchoolSchedule: React.FC = () => {
     if (formData.level) {
       const teacherToSave = formData.teacher && formData.teacher.trim() ? formData.teacher.trim() : (teacherProfile?.name || '');
       const toSave = { ...formData, name: formData.level, grade: formData.level, teacher: teacherToSave } as any;
+      // Prevent overlapping session at same day/time (check start/end overlap)
+      const parseTimeToMinutes = (t: string) => {
+        try {
+          const [hh, mm] = (t || '').split(':').map(x => parseInt(x, 10));
+          if (isNaN(hh)) return 0;
+          return hh * 60 + (isNaN(mm) ? 0 : mm);
+        } catch { return 0; }
+      };
+
+      const newStart = parseTimeToMinutes(toSave.time);
+      const newEnd = toSave.endTime ? parseTimeToMinutes(toSave.endTime) : (newStart + (toSave.duration || 60));
+
+      const conflict = schoolSessions.find(s => {
+        if (s.day !== toSave.day) return false;
+        if (editingId && s.id === editingId) return false;
+        const sStart = parseTimeToMinutes(s.time);
+        const sEnd = s.endTime ? parseTimeToMinutes(s.endTime) : (sStart + (s.duration || 60));
+        // overlap if ranges intersect
+        return (newStart < sEnd && sStart < newEnd);
+      });
+
+      if (conflict) {
+        const cName = conflict.level || conflict.name || 'حصة مجهولة';
+        const cTime = `${conflict.time}${conflict.endTime ? ' - ' + conflict.endTime : ''}`;
+        window.alert(`لا يمكن إضافة الحصة — يوجد تعارض مع ${cName} في هذا اليوم والوقت (${cTime}).`);
+        return;
+      }
       if (editingId) {
         updateSchoolSession({ ...toSave, id: editingId, createdAt: Date.now() });
         setEditingId(null);
@@ -150,10 +177,13 @@ const SchoolSchedule: React.FC = () => {
 
   // الحصول على حصة محددة في وقت ويوم معين
   const getSessionForSlot = (dayIndex: number, timeStr: string) => {
-    const hour = parseInt(timeStr.split(':')[0]);
+    // Match session that starts at this exact slot time, or any session whose start minute falls within this hour
+    const slotHour = parseInt(timeStr.split(':')[0]);
     return schoolSessions.find(s => {
-      const fsHour = parseInt(s.time.split(':')[0]);
-      return s.day === dayIndex && fsHour === hour;
+      if (s.day !== dayIndex) return false;
+      const [hh] = s.time.split(':');
+      const sHour = parseInt(hh);
+      return sHour === slotHour;
     });
   };
 
@@ -426,7 +456,7 @@ const SchoolSchedule: React.FC = () => {
                                   {session.teacher || teacherProfile?.name || '—'}
                                 </span>
                                 {session.notes && (
-                                  <span className="text-[9px] text-slate-300 mt-1 block truncate" style={{ fontSize: `${7 * scheduleZoom}px` }}>
+                                  <span className="text-[9px] text-slate-300 mt-1 block" style={{ fontSize: `${7 * scheduleZoom}px`, whiteSpace: 'normal' }}>
                                     {session.notes}
                                   </span>
                                 )}
