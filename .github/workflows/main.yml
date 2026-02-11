@@ -36,6 +36,24 @@ jobs:
           chmod +x gradlew
           ./gradlew clean assembleRelease --stacktrace 2>&1 | tee gradle.log
 
+      - name: Install legacy build-tools (29.0.3) for zipalign
+        run: |
+          echo "Installing build-tools;29.0.3"
+          if command -v sdkmanager >/dev/null 2>&1; then
+            yes | sdkmanager "build-tools;29.0.3"
+          else
+            # Try sdkmanager from Android SDK root
+            export ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-$HOME/Android/Sdk}
+            if [ -f "$ANDROID_SDK_ROOT/tools/bin/sdkmanager" ]; then
+              yes | "$ANDROID_SDK_ROOT/tools/bin/sdkmanager" "build-tools;29.0.3"
+            elif [ -f "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" ]; then
+              yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" "build-tools;29.0.3"
+            else
+              echo "sdkmanager not found; cannot install build-tools 29.0.3" >&2
+              exit 1
+            fi
+          fi
+
       - name: Sign APK
         uses: r0adkll/sign-android-release@v1
         id: sign_app
