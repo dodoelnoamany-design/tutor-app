@@ -27,6 +27,13 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
+      - name: Setup Android SDK (ensure build-tools)
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 34
+          build-tools: 34.0.0
+
+
       - name: Sync Capacitor
         run: npx cap sync android
 
@@ -36,22 +43,16 @@ jobs:
           chmod +x gradlew
           ./gradlew clean assembleRelease --stacktrace 2>&1 | tee gradle.log
 
-      - name: Install legacy build-tools (29.0.3) for zipalign
+      - name: Verify apksigner and zipalign
         run: |
-          echo "Installing build-tools;29.0.3"
-          if command -v sdkmanager >/dev/null 2>&1; then
-            yes | sdkmanager "build-tools;29.0.3"
-          else
-            # Try sdkmanager from Android SDK root
-            export ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-$HOME/Android/Sdk}
-            if [ -f "$ANDROID_SDK_ROOT/tools/bin/sdkmanager" ]; then
-              yes | "$ANDROID_SDK_ROOT/tools/bin/sdkmanager" "build-tools;29.0.3"
-            elif [ -f "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" ]; then
-              yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" "build-tools;29.0.3"
-            else
-              echo "sdkmanager not found; cannot install build-tools 29.0.3" >&2
-              exit 1
-            fi
+          echo "Listing build-tools directories"
+          ls -la $ANDROID_SDK_ROOT/build-tools || true
+          echo "Which apksigner and zipalign"
+          which apksigner || true
+          which zipalign || true
+          if [ -f "$ANDROID_SDK_ROOT/build-tools/34.0.0/apksigner" ]; then
+            echo "apksigner found at $ANDROID_SDK_ROOT/build-tools/34.0.0/apksigner"
+            ls -la $ANDROID_SDK_ROOT/build-tools/34.0.0/
           fi
 
       - name: Sign APK
