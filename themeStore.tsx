@@ -114,6 +114,8 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     accent: '#f59e0b',
     background: THEME_CONFIG[theme].bg,
     text: THEME_CONFIG[theme].text,
+    scheduleBox: '#7c3aed',
+    appointmentsBox: '#2563eb',
   });
 
   // دالة التصدير

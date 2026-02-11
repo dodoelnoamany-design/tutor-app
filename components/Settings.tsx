@@ -115,25 +115,63 @@ const Settings: React.FC = () => {
         )}
       </section>
 
-        {/* 3.b ألوان الجداول (الحصص والمواعيد) */}
+        {/* 3.b ألوان الجداول (الحصص والمواعيد) - ألوان منقّحة وقوائم جاهزة */}
         <section className="glass-3d p-5 rounded-[2.5rem] border border-white/5 space-y-4">
           <div className="flex items-center justify-between">
             <span className="text-amber-400 text-[10px] font-black uppercase">تلوين جداول التطبيق</span>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <label className="text-[10px] text-slate-300 font-bold">لون مربعات جدول الحصص</label>
-              <div className="flex items-center gap-2">
-                <input type="color" value={customColors.scheduleBox || '#7c3aed'} onChange={(e) => setCustomColors({ scheduleBox: e.target.value })} className="w-12 h-8 p-0 border rounded-lg" />
-                <input type="text" value={customColors.scheduleBox || '#7c3aed'} onChange={(e) => setCustomColors({ scheduleBox: e.target.value })} className="flex-1 bg-slate-900 border border-white/10 rounded-2xl px-3 py-2 text-sm text-white outline-none" />
+
+          {/* Palette data */}
+          {/* هادئة / كلاسيكية */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-[10px] text-slate-300 font-bold">مربعات جدول الحصص (هدية / كلاسيكية)</label>
+                <button onClick={() => setCustomColors({ scheduleBox: '#7c3aed' })} className="text-[11px] text-slate-400 bg-slate-800/40 px-3 py-1 rounded-lg">استعادة الافتراضي</button>
+              </div>
+              <div className="grid grid-cols-6 gap-2">
+                {['#7c3aed','#2563eb','#10b981','#64748b','#60a5fa','#f59e0b'].map(c => (
+                  <button key={c} onClick={() => setCustomColors({ scheduleBox: c })} title={c} className="w-full h-8 rounded-lg border" style={{ backgroundColor: c, borderColor: 'rgba(255,255,255,0.06)' }} />
+                ))}
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[10px] text-slate-300 font-bold">لون مربعات جدول المواعيد</label>
-              <div className="flex items-center gap-2">
-                <input type="color" value={customColors.appointmentsBox || '#2563eb'} onChange={(e) => setCustomColors({ appointmentsBox: e.target.value })} className="w-12 h-8 p-0 border rounded-lg" />
-                <input type="text" value={customColors.appointmentsBox || '#2563eb'} onChange={(e) => setCustomColors({ appointmentsBox: e.target.value })} className="flex-1 bg-slate-900 border border-white/10 rounded-2xl px-3 py-2 text-sm text-white outline-none" />
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-[10px] text-slate-300 font-bold">مربعات جدول المواعيد (هدية / كلاسيكية)</label>
+                <button onClick={() => setCustomColors({ appointmentsBox: '#2563eb' })} className="text-[11px] text-slate-400 bg-slate-800/40 px-3 py-1 rounded-lg">استعادة الافتراضي</button>
+              </div>
+              <div className="grid grid-cols-6 gap-2">
+                {['#2563eb','#7c3aed','#06b6d4','#10b981','#94a3b8','#f97316'].map(c => (
+                  <button key={c} onClick={() => setCustomColors({ appointmentsBox: c })} title={c} className="w-full h-8 rounded-lg border" style={{ backgroundColor: c, borderColor: 'rgba(255,255,255,0.06)' }} />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* جريئة */}
+          <div className="mt-4 grid grid-cols-2 gap-4">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-[10px] text-slate-300 font-bold">مربعات جدول الحصص (جريئة)</label>
+                <button onClick={() => setCustomColors({ scheduleBox: '#7c3aed' })} className="text-[11px] text-slate-400 bg-slate-800/40 px-3 py-1 rounded-lg">استعادة الافتراضي</button>
+              </div>
+              <div className="grid grid-cols-6 gap-2">
+                {['#ef4444','#a855f7','#f472b6','#db2777','#f59e0b','#06b6d4'].map(c => (
+                  <button key={c} onClick={() => setCustomColors({ scheduleBox: c })} title={c} className="w-full h-8 rounded-lg border" style={{ backgroundColor: c, borderColor: 'rgba(255,255,255,0.06)' }} />
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-[10px] text-slate-300 font-bold">مربعات جدول المواعيد (جريئة)</label>
+                <button onClick={() => setCustomColors({ appointmentsBox: '#2563eb' })} className="text-[11px] text-slate-400 bg-slate-800/40 px-3 py-1 rounded-lg">استعادة الافتراضي</button>
+              </div>
+              <div className="grid grid-cols-6 gap-2">
+                {['#ef4444','#a855f7','#f97316','#f59e0b','#06b6d4','#db2777'].map(c => (
+                  <button key={c} onClick={() => setCustomColors({ appointmentsBox: c })} title={c} className="w-full h-8 rounded-lg border" style={{ backgroundColor: c, borderColor: 'rgba(255,255,255,0.06)' }} />
+                ))}
               </div>
             </div>
           </div>
