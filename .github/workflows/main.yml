@@ -55,6 +55,21 @@ jobs:
             ls -la $ANDROID_SDK_ROOT/build-tools/34.0.0/
           fi
 
+      - name: Set BUILD_TOOLS path and add to PATH for signing action
+        run: |
+          echo "Detecting installed build-tools version"
+          SDK_ROOT=${ANDROID_SDK_ROOT:-$ANDROID_SDK_HOME:-$ANDROID_HOME:-$HOME/Android/Sdk}
+          echo "ANDROID_SDK_ROOT=${SDK_ROOT}" >> $GITHUB_ENV
+          if [ -d "$SDK_ROOT/build-tools" ]; then
+            BUILD_TOOLS_VERSION=$(ls "$SDK_ROOT/build-tools" | sort -V | tail -n1)
+            echo "BUILD_TOOLS_VERSION=$BUILD_TOOLS_VERSION" >> $GITHUB_ENV
+            echo "$SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION" >> $GITHUB_PATH
+            echo "Added $SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION to PATH"
+          else
+            echo "No build-tools directory found under $SDK_ROOT" >&2
+            exit 1
+          fi
+
       - name: Sign APK
         uses: r0adkll/sign-android-release@v1
         id: sign_app
