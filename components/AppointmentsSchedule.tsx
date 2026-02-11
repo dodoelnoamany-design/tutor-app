@@ -234,16 +234,12 @@ const AppointmentsSchedule: React.FC = () => {
                     const studentsFor = getStudentsForSlot(day.dayIndex, slot.raw);
                     return (
                       <td key={`${day.dayIndex}-${slot.raw}`} style={{ height: `${64 * scheduleZoom}px` }}>
-                        <div className={`w-full h-full rounded-xl border transition-all flex flex-col items-center justify-center text-center group ${
-                          studentsFor.length > 0
-                            ? 'bg-blue-600/20 border-blue-500/40 shadow-lg shadow-blue-900/10'
-                            : 'bg-slate-900/10 border-dashed border-slate-800/30'
-                        }`} style={{ padding: `${6 * scheduleZoom}px` }}>
+                        <div className={`w-full h-full rounded-xl border transition-all flex flex-col items-center justify-center text-center group ${studentsFor.length > 0 ? '' : 'bg-slate-900/10 border-dashed border-slate-800/30'}`} style={ studentsFor.length > 0 ? { padding: `${6 * scheduleZoom}px`, background: 'var(--color-appointments-box)', border: '1px solid rgba(0,0,0,0.16)', boxShadow: '0 6px 18px rgba(0,0,0,0.08)' } : { padding: `${6 * scheduleZoom}px` } }>
                           {studentsFor.length > 0 ? (
                             <>
-                              <span className="text-[9px] font-black text-white truncate w-full" style={{ marginBottom: `${4 * scheduleZoom}px`, fontSize: `${9 * scheduleZoom}px` }}>{studentsFor.map(st => st.name).join(' • ')}</span>
+                              <span className="text-[9px] font-black truncate w-full" style={{ marginBottom: `${4 * scheduleZoom}px`, fontSize: `${9 * scheduleZoom}px`, color: '#000' }}>{studentsFor.map(st => st.name).join(' • ')}</span>
                               <div className="flex flex-col gap-0.5">
-                                <span className="text-[7px] font-black text-blue-400 opacity-80 uppercase tracking-tighter" style={{ fontSize: `${7 * scheduleZoom}px` }}>
+                                <span className="text-[7px] font-black opacity-80 uppercase tracking-tighter" style={{ fontSize: `${7 * scheduleZoom}px`, color: 'rgba(0,0,0,0.7)' }}>
                                   {studentsFor.map(st => st.level).filter(Boolean).join(' • ')}
                                 </span>
                               </div>

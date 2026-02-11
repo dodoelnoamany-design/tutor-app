@@ -115,6 +115,30 @@ const Settings: React.FC = () => {
         )}
       </section>
 
+        {/* 3.b ألوان الجداول (الحصص والمواعيد) */}
+        <section className="glass-3d p-5 rounded-[2.5rem] border border-white/5 space-y-4">
+          <div className="flex items-center justify-between">
+            <span className="text-amber-400 text-[10px] font-black uppercase">تلوين جداول التطبيق</span>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <label className="text-[10px] text-slate-300 font-bold">لون مربعات جدول الحصص</label>
+              <div className="flex items-center gap-2">
+                <input type="color" value={customColors.scheduleBox || '#7c3aed'} onChange={(e) => setCustomColors({ scheduleBox: e.target.value })} className="w-12 h-8 p-0 border rounded-lg" />
+                <input type="text" value={customColors.scheduleBox || '#7c3aed'} onChange={(e) => setCustomColors({ scheduleBox: e.target.value })} className="flex-1 bg-slate-900 border border-white/10 rounded-2xl px-3 py-2 text-sm text-white outline-none" />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] text-slate-300 font-bold">لون مربعات جدول المواعيد</label>
+              <div className="flex items-center gap-2">
+                <input type="color" value={customColors.appointmentsBox || '#2563eb'} onChange={(e) => setCustomColors({ appointmentsBox: e.target.value })} className="w-12 h-8 p-0 border rounded-lg" />
+                <input type="text" value={customColors.appointmentsBox || '#2563eb'} onChange={(e) => setCustomColors({ appointmentsBox: e.target.value })} className="flex-1 bg-slate-900 border border-white/10 rounded-2xl px-3 py-2 text-sm text-white outline-none" />
+              </div>
+            </div>
+          </div>
+        </section>
+
       {/* 2. وضع المظهر (ليلي / نهاري) */}
       <section className="glass-3d p-5 rounded-[2.5rem] border border-white/5 flex items-center justify-between">
         <span className="text-slate-300 text-xs font-black">وضع المظهر</span>

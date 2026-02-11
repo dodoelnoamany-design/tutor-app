@@ -431,13 +431,10 @@ const SchoolSchedule: React.FC = () => {
                       const session = getSessionForSlot(day.index, slot.raw);
                       return (
                         <td key={`${day.index}-${slot.raw}`} style={{ height: `${80 * scheduleZoom}px` }}>
-                          <div 
-                            className={`w-full h-full rounded-xl border transition-all relative ${
-                              session 
-                                ? 'bg-purple-600/20 border-purple-500/40 shadow-lg shadow-purple-900/10 flex flex-col items-center justify-center p-1.5 text-center group hover:bg-purple-600/30 cursor-pointer' 
-                                : 'bg-slate-900/10 border-dashed border-slate-800/30'
-                            }`}
+                          <div
                             onClick={() => session && handleEdit(session)}
+                            className={`w-full h-full rounded-xl transition-all relative ${session ? 'flex flex-col items-center justify-center p-1.5 text-center group cursor-pointer' : 'bg-slate-900/10 border-dashed border-slate-800/30'}`}
+                            style={ session ? { background: 'var(--color-schedule-box)', border: '1px solid rgba(0,0,0,0.18)', boxShadow: '0 6px 18px rgba(0,0,0,0.12)' } : undefined }
                           >
                             {session ? (
                               <>
@@ -452,11 +449,11 @@ const SchoolSchedule: React.FC = () => {
                                     {session.subject}
                                   </span>
                                 )}
-                                <span className="text-[9px] text-slate-400 mt-1 block" style={{ fontSize: `${8 * scheduleZoom}px` }}>
+                                <span className="text-[9px] mt-1 block" style={{ fontSize: `${8 * scheduleZoom}px`, color: 'rgba(255,255,255,0.9)' }}>
                                   {session.teacher || teacherProfile?.name || '—'}
                                 </span>
                                 {session.notes && (
-                                  <span className="text-[9px] text-slate-300 mt-1 block" style={{ fontSize: `${7 * scheduleZoom}px`, whiteSpace: 'normal' }}>
+                                  <span className="text-[9px] mt-1 block" style={{ fontSize: `${7 * scheduleZoom}px`, whiteSpace: 'normal', color: '#000', fontWeight: 700 }}>
                                     {session.notes}
                                   </span>
                                 )}

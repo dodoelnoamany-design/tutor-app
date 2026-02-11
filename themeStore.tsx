@@ -11,6 +11,8 @@ interface CustomColors {
   accent: string;
   background: string;
   text: string;
+  scheduleBox?: string;
+  appointmentsBox?: string;
 }
 
 interface SettingsContextType {
@@ -56,6 +58,8 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       accent: '#f59e0b',
       background: THEME_CONFIG.dark.bg,
       text: THEME_CONFIG.dark.text,
+      scheduleBox: '#7c3aed',
+      appointmentsBox: '#2563eb',
     };
   });
 
@@ -85,6 +89,9 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     html.style.setProperty('--color-background', bgColor);
     html.style.setProperty('--color-text', textColor);
     html.style.setProperty('--color-accent', customColors.accent);
+    // schedule & appointments box colors
+    html.style.setProperty('--color-schedule-box', customColors.scheduleBox || customColors.primary);
+    html.style.setProperty('--color-appointments-box', customColors.appointmentsBox || customColors.primary);
 
     localStorage.setItem('tutor_theme', theme);
     localStorage.setItem('tutor_custom_colors', JSON.stringify({...customColors, background: bgColor, text: textColor}));
