@@ -339,7 +339,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const original = prev.find(s => s.id === sessionId);
         if (original) {
           // mark original as postponed and add a human-friendly note with the new date
-          const postponedNote = `تم التاجيل ليوم ${new Date(newDate).toLocaleDateString('ar-EG')}`;
+          const postponedNote = `تم التأجيل ليوم ${new Date(newDate).toLocaleDateString('ar-EG')}`;
           const updatedOriginal = { ...original, status: SessionStatus.POSTPONED, note: postponedNote };
 
           const rescheduled: Session = {
@@ -348,9 +348,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             dateTime: newDate,
             duration: original.duration,
             price: original.price,
-            status: SessionStatus.RESCHEDULED,
+            // Keep rescheduled session as pending so it won't be counted in income
+            status: SessionStatus.PENDING,
             originalSessionId: original.id,
-            note: `This session is postponed from ${new Date(original.dateTime).toLocaleDateString()}`
+            note: `هذه الحصة مؤجلة من ${new Date(original.dateTime).toLocaleDateString('ar-EG')}`
           };
 
           // replace the original in list with updatedOriginal, and add rescheduled
@@ -386,7 +387,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const formatLocal = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     return sessions
       .filter(s => {
-        try { return formatLocal(new Date(s.dateTime)) === date && (s.status === SessionStatus.COMPLETED || s.status === SessionStatus.RESCHEDULED); } catch { return false; }
+        try { return formatLocal(new Date(s.dateTime)) === date && s.status === SessionStatus.COMPLETED; } catch { return false; }
       })
       .reduce((sum, s) => sum + s.price, 0);
   };
@@ -401,7 +402,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const today = `${_today.getFullYear()}-${String(_today.getMonth()+1).padStart(2,'0')}-${String(_today.getDate()).padStart(2,'0')}`;
     const todaySessions = getDailySessions(today);
     const totalIncome = sessions
-      .filter(s => (s.status === SessionStatus.COMPLETED || s.status === SessionStatus.RESCHEDULED))
+      .filter(s => s.status === SessionStatus.COMPLETED)
       .reduce((sum, s) => sum + s.price, 0);
     const cancelledCount = sessions.filter(s => s.status === SessionStatus.CANCELLED).length;
     const pendingPostponed = sessions.filter(s => s.status === SessionStatus.POSTPONED).length;
@@ -416,7 +417,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const getFinancialReport = () => {
     const studentReports = students.map(student => {
       const studentSessions = sessions.filter(s => s.studentId === student.id);
-      const completedCount = studentSessions.filter(s => s.status === SessionStatus.COMPLETED || s.status === SessionStatus.RESCHEDULED).length;
+      const completedCount = studentSessions.filter(s => s.status === SessionStatus.COMPLETED).length;
       const totalDebt = completedCount * student.sessionPrice;
       const status: 'paid' | 'unpaid' | 'partial' = student.paidAmount >= totalDebt ? 'paid' : (student.paidAmount > 0 ? 'partial' : 'unpaid');
       

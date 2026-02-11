@@ -16,16 +16,15 @@ const DailySummaryModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const stats = getStats();
   const todayIncome = getDailyIncome(today);
   
-  // الحصص التي تحتاج إلى حسم (بانتظار الحضور، مؤجلة حالياً، أو تعويضية لم تنتهِ)
+  // الحصص التي تحتاج إلى حسم (بانتظار الحضور أو مؤجلة حالياً)
   const pendingCount = stats.todaySessions.filter(s => 
     s.status === SessionStatus.PENDING || 
-    s.status === SessionStatus.POSTPONED || 
-    s.status === SessionStatus.RESCHEDULED
+    s.status === SessionStatus.POSTPONED
   ).length;
 
   const handleQuickCompleteAll = () => {
     stats.todaySessions.forEach(s => {
-      if (s.status === SessionStatus.PENDING || s.status === SessionStatus.POSTPONED || s.status === SessionStatus.RESCHEDULED) {
+      if (s.status === SessionStatus.PENDING || s.status === SessionStatus.POSTPONED) {
         updateSessionStatus(s.id, SessionStatus.COMPLETED);
       }
     });

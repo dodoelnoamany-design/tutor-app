@@ -56,7 +56,7 @@ const Dashboard: React.FC<{ onNavigate: (tab: any) => void }> = ({ onNavigate })
   // حساب نسبة الإنجاز اليومي (عداد الإنجاز الذكي بدلاً من الأرباح)
   const totalToday = stats.todaySessions.length;
   const completedToday = stats.todaySessions.filter(s => 
-    s.status === SessionStatus.COMPLETED || s.status === SessionStatus.RESCHEDULED
+    s.status === SessionStatus.COMPLETED
   ).length;
   const progressPercent = totalToday > 0 ? Math.round((completedToday / totalToday) * 100) : 0;
 
