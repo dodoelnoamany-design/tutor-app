@@ -1,0 +1,78 @@
+
+{
+  "name": "al-arabia-inventory-pro",
+  "version": "4.0.0",
+  "description": "النظام المتكامل لإدارة المخازن والعهد - الشركة العربية لصهر وتشكيل المعادن",
+  "main": "main.js",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "vite",
+    "start": "electron .",
+    "dev:all": "concurrently \"npm:dev\" \"wait-on http://localhost:5173 && npm run start\"",
+    "build": "vite build && electron-builder --win",
+    "build:win": "vite build && electron-builder --win nsis",
+    "make-icon": "node ./scripts/make-icon.js",
+    "postinstall": "node ./scripts/copy-wasm.js && electron-rebuild -f -w better-sqlite3",
+    "rebuild:native": "electron-rebuild -f -w better-sqlite3"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3",
+    "electron-rebuild": "^3.2.5",
+    "vite": "^5.0.0",
+    "@vitejs/plugin-react": "^4.2.0",
+    "typescript": "^5.0.0",
+    "concurrently": "^8.2.0",
+    "wait-on": "^7.0.0"
+  },
+  "dependencies": {
+  "better-sqlite3": "^8.2.0",
+  "jsbarcode": "^3.11.5",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "lucide-react": "^0.562.0",
+    "recharts": "^3.6.0",
+    "date-fns": "^4.1.0",
+    "xlsx": "0.18.5",
+    "sql.js": "^1.8.0",
+    "adm-zip": "^0.5.9",
+    "electron-store": "^8.1.0"
+  },
+  "build": {
+    "appId": "com.elnoamany.al-arabia.inventory",
+    "productName": "elnoamany_ - العربية للمخازن Pro",
+    "directories": {
+      "output": "dist-electron"
+    },
+    
+    "files": [
+      "dist/**/*",
+      "main.js",
+      "db.js",
+      "backup.js",
+      "electron-api.js",
+      "utils.js",
+      "license-manager.js",
+      "license.html",
+      "icon.ico",
+      "sql-wasm.wasm",
+      "db.worker.js",
+      "assets/**",
+      "scripts/**"
+    ],
+    "extraResources": [
+      { "from": "data/", "to": "data", "filter": ["**/*"] },
+      { "from": "assets/", "to": "assets", "filter": ["**/*"] }
+    ],
+    "win": {
+      "publisherName": "M.Elnoamany",
+      "target": "nsis",
+      "requestedExecutionLevel": "requireAdministrator"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "shortcutName": "العربية للمخازن Pro"
+    }
+  }
+}

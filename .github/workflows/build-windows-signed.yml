@@ -1,0 +1,67 @@
+name: Build Windows Signed EXE
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build-windows-signed:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies (use npm install to refresh lock mismatch)
+        run: npm install
+
+      - name: Rebuild native modules (better-sqlite3)
+        run: npx electron-rebuild -f -w better-sqlite3
+
+      - name: Build renderer (Vite) and package (electron-builder)
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+        run: npm run build
+
+      - name: Upload EXE artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-exe
+          path: dist-electron/*.exe
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        with:
+          tag_name: windows-signed-${{ github.run_number }}
+          release_name: Windows Signed EXE - ${{ github.run_number }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Zip build output
+        if: steps.create_release.outputs.upload_url != ''
+        run: |
+          powershell -Command "Compress-Archive -Path 'dist-electron\*' -DestinationPath 'windows-signed-${{ github.run_number }}.zip' -Force"
+
+      - name: Upload EXE to Release
+        if: steps.create_release.outputs.upload_url != ''
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: windows-signed-${{ github.run_number }}.zip
+          asset_name: windows-signed-${{ github.run_number }}.zip
+          asset_content_type: application/zip
+
+      - name: List dist-electron contents
+        run: dir dist-electron || true
