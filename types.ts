@@ -28,6 +28,7 @@ export interface Student {
   sessionPrice: number;
   fixedSchedule: DayTime[];
   paidAmount: number; // إجمالي ما دفعه هذا الشهر
+  startDate?: string;
   createdAt: number;
 }
 

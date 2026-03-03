@@ -23,7 +23,8 @@ const StudentList: React.FC = () => {
     parentPhone: '', 
     notes: '', 
     monthlyPrice: '',
-    fixedSchedule: [] as DayTime[] 
+    fixedSchedule: [] as DayTime[],
+    startDate: ''
   });
   
   const daysAr = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
@@ -52,11 +53,10 @@ const StudentList: React.FC = () => {
   // فتح مودال الإضافة
   const openAdd = () => {
     setEditingStudent(null);
-    setFormData({ 
-      name: '', phone: '', level: '', age: '',
-      parentName: '', parentPhone: '', notes: '', 
-      fixedSchedule: [] 
-    });
+    // if the user already typed something, keep it (don't erase unexpectedly)
+    if (!formData.name && !formData.phone && !formData.level && !formData.parentName) {
+      setFormData({ name: '', phone: '', level: '', age: '', parentName: '', parentPhone: '', notes: '', monthlyPrice: '', fixedSchedule: [], startDate: '' });
+    }
     setShowModal(true);
   };
 
@@ -72,7 +72,8 @@ const StudentList: React.FC = () => {
       parentPhone: s.parentPhone || '', 
       notes: s.notes || '', 
       monthlyPrice: s.monthlyPrice?.toString() || '',
-      fixedSchedule: [...s.fixedSchedule] 
+      fixedSchedule: [...s.fixedSchedule],
+      startDate: s.startDate || ''
     });
     setShowModal(true);
   };
@@ -117,6 +118,34 @@ const StudentList: React.FC = () => {
       updateFixedSchedule(selectedForQuickTime.id, selectedForQuickTime.day, selectedForQuickTime.time);
       setQuickTimeModal(false);
     }
+  };
+
+  // sheet (modal) drag state for touch-friendly bottom sheet
+  const [sheetHeight, setSheetHeight] = React.useState<number>(Math.round(window.innerHeight * 0.6));
+  const sheetStart = React.useRef<{startY: number, startH: number} | null>(null);
+
+  const onSheetTouchStart = (e: React.TouchEvent) => {
+    sheetStart.current = { startY: e.touches[0].clientY, startH: sheetHeight };
+  };
+  const onSheetTouchMove = (e: React.TouchEvent) => {
+    if (!sheetStart.current) return;
+    const diff = e.touches[0].clientY - sheetStart.current.startY;
+    const newH = Math.max(120, Math.min(window.innerHeight - 40, sheetStart.current.startH - diff));
+    setSheetHeight(newH);
+  };
+  const onSheetTouchEnd = () => {
+    sheetStart.current = null;
+    // snap behavior: if sheetHeight < 35% collapse, else expand to 70%
+    const h = sheetHeight;
+    const pct = h / window.innerHeight;
+    if (pct < 0.35) setShowModal(false);
+    else if (pct < 0.6) setSheetHeight(Math.round(window.innerHeight * 0.45));
+    else setSheetHeight(Math.round(window.innerHeight * 0.75));
+  };
+
+  // ensure focused inputs scroll into view on mobile
+  const onInputFocus = (e: React.FocusEvent) => {
+    try { (e.target as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch {}
   };
 
   return (
@@ -167,10 +196,10 @@ const StudentList: React.FC = () => {
               <div className="px-5 pb-5 space-y-4 animate-in fade-in zoom-in duration-300">
                 <hr className="border-white/5" />
                 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <p className="text-[9px] text-slate-500 font-black uppercase">ولي الأمر</p>
-                    <p className="text-xs text-white font-bold">{s.parentName || 'غير مسجل'}</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <input onFocus={onInputFocus} type="text" placeholder="اسم ولي الأمر" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white" value={formData.parentName} onChange={(e) => setFormData({...formData, parentName: e.target.value})} />
+                  <input onFocus={onInputFocus} type="tel" placeholder="رقم ولي الأمر" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white text-right" value={formData.parentPhone} onChange={(e) => setFormData({...formData, parentPhone: e.target.value})} />
+                </div>
                     <p className="text-[10px] text-blue-400">{s.parentPhone || ''}</p>
                   </div>
                   <div className="space-y-1">
@@ -222,26 +251,32 @@ const StudentList: React.FC = () => {
 
       {/* مودال الإضافة والتعديل الكامل */}
       {showModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
-          <div className="glass-3d w-full max-w-md rounded-[2.5rem] p-6 border border-white/10 my-auto">
-            <h3 className="text-xl font-black text-white mb-6 text-center">{editingStudent ? 'تعديل طالب' : 'طالب جديد'}</h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <input required type="text" placeholder="اسم الطالب (إجباري)" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-white font-bold" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
-              
-              <div className="grid grid-cols-2 gap-3">
-                <input type="tel" placeholder="رقم الطالب" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white text-right" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
-                <input type="text" placeholder="المستوى" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white" value={formData.level} onChange={e => setFormData({...formData, level: e.target.value})} />
+        <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm" onClick={() => setShowModal(false)}>
+          <div className="pointer-events-none w-full h-full">
+            <div onClick={e => e.stopPropagation()} className="pointer-events-auto fixed left-0 right-0 mx-auto rounded-t-[2rem] bg-[#071020] border border-white/10 glass-3d" style={{ maxWidth: 720, height: sheetHeight, bottom: 0 }} onTouchStart={onSheetTouchStart} onTouchMove={onSheetTouchMove} onTouchEnd={onSheetTouchEnd}>
+              <div className="w-full flex items-center justify-center py-2">
+                <div className="w-12 h-1.5 bg-white/20 rounded-full" />
               </div>
+              <div className="p-5 overflow-auto h-full">
+                <h3 className="text-xl font-black text-white mb-4 text-center">{editingStudent ? 'تعديل طالب' : 'طالب جديد'}</h3>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <input required onFocus={onInputFocus} type="text" placeholder="اسم الطالب (إجباري)" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-white font-bold" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                  <input onFocus={onInputFocus} type="date" placeholder="تاريخ بداية الدرس" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white" value={formData.startDate} onChange={e => setFormData({...formData, startDate: e.target.value})} />
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <input onFocus={onInputFocus} type="tel" placeholder="رقم الطالب" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white text-right" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+                    <input onFocus={onInputFocus} type="text" placeholder="المستوى" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white" value={formData.level} onChange={e => setFormData({...formData, level: e.target.value})} />
+                  </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <input type="text" placeholder="اسم ولي الأمر" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white" value={formData.parentName} onChange={e => setFormData({...formData, parentName: e.target.value})} />
                 <input type="tel" placeholder="رقم ولي الأمر" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white text-right" value={formData.parentPhone} onChange={e => setFormData({...formData, parentPhone: e.target.value})} />
               </div>
 
-              <input type="number" placeholder="السن" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white text-right" value={formData.age} onChange={e => setFormData({...formData, age: e.target.value})} />
+              <input onFocus={onInputFocus} type="number" placeholder="السن" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white text-right" value={formData.age} onChange={e => setFormData({...formData, age: e.target.value})} />
               
-              <input type="number" placeholder="سعر الشهر (جنيه)" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white text-right" value={formData.monthlyPrice} onChange={e => setFormData({...formData, monthlyPrice: e.target.value})} />
-              <textarea placeholder="ملاحظات..." className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white h-20" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} />
+              <input onFocus={onInputFocus} type="number" placeholder="سعر الشهر (جنيه)" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white text-right" value={formData.monthlyPrice} onChange={e => setFormData({...formData, monthlyPrice: e.target.value})} />
+              <textarea onFocus={onInputFocus} placeholder="ملاحظات..." className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white h-20" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} />
 
               {/* اختيار المواعيد الثابتة */}
               <div className="p-4 bg-black/20 rounded-3xl border border-white/5 space-y-4">
@@ -264,7 +299,7 @@ const StudentList: React.FC = () => {
                 {formData.fixedSchedule.map(fd => (
                   <div key={fd.day} className="flex items-center justify-between bg-slate-900/50 p-2 rounded-xl border border-white/5">
                     <span className="text-[10px] font-bold text-white pr-2">{daysAr[fd.day]}</span>
-                    <input type="time" className={`${theme === 'light' ? 'bg-white text-black' : 'bg-slate-800 text-white'} text-xs p-1.5 rounded-lg outline-none`} value={fd.time} onChange={e => setFormData({...formData, fixedSchedule: formData.fixedSchedule.map(item => item.day === fd.day ? {...item, time: e.target.value} : item)})} />
+                    <input onFocus={onInputFocus} type="time" className={`${theme === 'light' ? 'bg-white text-black' : 'bg-slate-800 text-white'} text-xs p-1.5 rounded-lg outline-none`} value={fd.time} onChange={e => setFormData({...formData, fixedSchedule: formData.fixedSchedule.map(item => item.day === fd.day ? {...item, time: e.target.value} : item)})} />
                   </div>
                 ))}
               </div>
@@ -287,6 +322,7 @@ const StudentList: React.FC = () => {
               value={selectedForQuickTime.time} 
               onChange={e => setSelectedForQuickTime({...selectedForQuickTime, time: e.target.value})} 
               className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-4 text-white font-black text-3xl text-center mb-8 outline-none focus:border-blue-500" 
+              onFocus={onInputFocus}
             />
             <div className="flex gap-3">
               <button onClick={handleQuickTimeUpdate} className="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-black shadow-lg">تحديث</button>
