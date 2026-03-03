@@ -125,28 +125,8 @@ const StudentList: React.FC = () => {
     }
   };
 
-  // sheet (modal) drag state for touch-friendly bottom sheet (slightly smaller by default)
-  const [sheetHeight, setSheetHeight] = React.useState<number>(Math.round(window.innerHeight * 0.55));
-  const sheetStart = React.useRef<{startY: number, startH: number} | null>(null);
-
-  const onSheetTouchStart = (e: React.TouchEvent) => {
-    sheetStart.current = { startY: e.touches[0].clientY, startH: sheetHeight };
-  };
-  const onSheetTouchMove = (e: React.TouchEvent) => {
-    if (!sheetStart.current) return;
-    const diff = e.touches[0].clientY - sheetStart.current.startY;
-    const newH = Math.max(120, Math.min(window.innerHeight - 40, sheetStart.current.startH - diff));
-    setSheetHeight(newH);
-  };
-  const onSheetTouchEnd = () => {
-    sheetStart.current = null;
-    // snap behavior: if sheetHeight < 35% collapse, else expand to 70%
-    const h = sheetHeight;
-    const pct = h / window.innerHeight;
-    if (pct < 0.35) setShowModal(false);
-    else if (pct < 0.6) setSheetHeight(Math.round(window.innerHeight * 0.45));
-    else setSheetHeight(Math.round(window.innerHeight * 0.75));
-  };
+  // sheet (modal) fixed expanded size — non-draggable, scrollable content inside
+  const [sheetHeight, setSheetHeight] = React.useState<number>(Math.round(window.innerHeight * 0.85));
 
   // ensure focused inputs scroll into view on mobile and expand sheet for visibility
   const onInputFocus = (e: React.FocusEvent) => {
@@ -232,8 +212,8 @@ const StudentList: React.FC = () => {
   const renderModal = () => {
     return (
       <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm" onClick={onBackdropClick}>
-        <div className="pointer-events-none w-full h-full">
-          <div onClick={e => e.stopPropagation()} className="pointer-events-auto fixed left-0 right-0 mx-auto rounded-t-[2rem] bg-[#071020] border border-white/10 glass-3d" style={{ maxWidth: 720, height: sheetHeight, bottom: 0 }} onTouchStart={onSheetTouchStart} onTouchMove={onSheetTouchMove} onTouchEnd={onSheetTouchEnd}>
+          <div className="pointer-events-none w-full h-full">
+            <div onClick={e => e.stopPropagation()} className="pointer-events-auto fixed left-0 right-0 mx-auto rounded-t-[2rem] bg-[#071020] border border-white/10 glass-3d" style={{ maxWidth: 720, height: '85vh', bottom: 0 }}>
             <div className="w-full flex items-center justify-center py-2">
               <div className="w-12 h-1.5 bg-white/20 rounded-full" />
             </div>
