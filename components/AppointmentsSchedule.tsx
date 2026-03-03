@@ -77,19 +77,17 @@ const AppointmentsSchedule: React.FC = () => {
   ];
 
   // توليد فترات زمنية بنظام 12 ساعة (من 8 صباحاً حتى 11 مساءً)
-  const allTimeSlots = useMemo(() => {
-    const slots = [];
-    for (let h = 8; h <= 23; h++) {
-      const displayHour = h > 12 ? h - 12 : h;
-      const amPm = h >= 12 ? 'م' : 'ص';
-      slots.push({
-        raw: `${h.toString().padStart(2, '0')}:00`,
-        display: `${displayHour}:00 ${amPm}`,
-        hour: h
-      });
-    }
-    return slots;
-  }, []);
+  // helper to format HH:MM -> h:mm ص/م
+  const formatDisplayTime = (timeStr: string) => {
+    try {
+      const [hhStr, mmStr] = (timeStr || '00:00').split(':');
+      const hh = parseInt(hhStr, 10);
+      const mm = parseInt(mmStr || '0', 10);
+      const h12 = hh % 12 === 0 ? 12 : hh % 12;
+      const ampm = hh >= 12 ? 'م' : 'ص';
+      return `${h12}:${mm.toString().padStart(2, '0')} ${ampm}`;
+    } catch { return timeStr; }
+  };
 
   // Build next 7 days starting from today (for "هذا الأسبوع" grouping)
   const weekDates = useMemo(() => {
@@ -110,25 +108,29 @@ const AppointmentsSchedule: React.FC = () => {
     return weekDates.filter(day => students.some(s => s.fixedSchedule.some(fs => fs.day === day.dayIndex)));
   }, [students, weekDates]);
 
-  // Active time slots within the coming week
+  // Generate minute-accurate time slots from students' fixedSchedule within the week
+  const allTimeSlots = useMemo(() => {
+    const times = new Set<string>();
+    students.forEach(s => s.fixedSchedule.forEach(fs => {
+      if (weekDates.some(wd => wd.dayIndex === fs.day) && fs.time) times.add(fs.time);
+    }));
+    const arr = Array.from(times).sort();
+    if (arr.length === 0) {
+      // fallback hourly
+      const slots: { raw: string; display: string; hour: number }[] = [];
+      for (let h = 8; h <= 23; h++) slots.push({ raw: `${h.toString().padStart(2,'0')}:00`, display: formatDisplayTime(`${h.toString().padStart(2,'0')}:00`), hour: h });
+      return slots;
+    }
+    return arr.map(t => ({ raw: t, display: formatDisplayTime(t), hour: parseInt(t.split(':')[0], 10) }));
+  }, [students, weekDates]);
+
   const activeTimeSlots = useMemo(() => {
-    return allTimeSlots.filter(slot => 
-      students.some(s => s.fixedSchedule.some(fs => {
-        const fsHour = parseInt(fs.time.split(':')[0]);
-        return fsHour === slot.hour && weekDates.some(wd => wd.dayIndex === fs.day);
-      }))
-    );
+    return allTimeSlots.filter(slot => students.some(s => s.fixedSchedule.some(fs => fs.time === slot.raw && weekDates.some(wd => wd.dayIndex === fs.day))));
   }, [students, allTimeSlots, weekDates]);
 
-  // Return all students for a given day/time (to show conflicts or multiple students)
+  // Return all students for a given day/time (exact HH:MM match) — stacked entries
   const getStudentsForSlot = (dayIndex: number, timeStr: string) => {
-    const hour = parseInt(timeStr.split(':')[0]);
-    return students.filter(s => 
-      s.fixedSchedule.some(fs => {
-        const fsHour = parseInt(fs.time.split(':')[0]);
-        return fs.day === dayIndex && fsHour === hour;
-      })
-    );
+    return students.filter(s => s.fixedSchedule.some(fs => fs.day === dayIndex && fs.time === timeStr));
   };
 
   if (activeDays.length === 0 || activeTimeSlots.length === 0) {
@@ -153,6 +155,12 @@ const AppointmentsSchedule: React.FC = () => {
         <div className="space-y-1">
           <h2 className="text-2xl font-black text-white">خريطة المواعيد الثابتة</h2>
           <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">يتم عرض الأيام والساعات المشغولة فقط</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={() => window.location.reload()} className="bg-slate-800/60 text-slate-200 px-3 py-2 rounded-xl text-sm font-black flex items-center gap-2">
+            <img src="/assets/update-icon.png" alt="تحديث" onError={(e: any) => { e.currentTarget.style.display = 'none'; }} style={{ width: 20, height: 20, objectFit: 'contain' }} />
+            <span className="hidden sm:block">تحديث</span>
+          </button>
         </div>
         {/* Draggable zoom/moveable resize button */}
         <div
