@@ -111,14 +111,25 @@ const SchoolSchedule: React.FC = () => {
     return slots;
   }, []);
 
+  // refreshTick allows forcing a refresh when user clicks refresh
+  const [refreshTick, setRefreshTick] = useState<number>(0);
+
+  // Build minute-accurate active time slots from actual session start times
   const activeTimeSlots = useMemo(() => {
-    return allTimeSlots.filter(slot =>
-      schoolSessions.some(s => {
-        const fsHour = parseInt(s.time.split(':')[0]);
-        return fsHour === slot.hour;
-      })
-    );
-  }, [schoolSessions, allTimeSlots]);
+    const setTimes = new Set<string>();
+    for (const s of schoolSessions) {
+      if (!s.time) continue;
+      const t = s.time.slice(0,5);
+      setTimes.add(t);
+    }
+    const arr = Array.from(setTimes);
+    arr.sort((a, b) => {
+      const [ah, am] = a.split(':').map(x => parseInt(x, 10));
+      const [bh, bm] = b.split(':').map(x => parseInt(x, 10));
+      return ah * 60 + am - (bh * 60 + bm);
+    });
+    return arr.map(t => ({ raw: t, display: t }));
+  }, [schoolSessions, refreshTick]);
 
   // إضافة أو تحديث حصة
   const handleAddSession = () => {
@@ -175,16 +186,21 @@ const SchoolSchedule: React.FC = () => {
     }
   };
 
-  // الحصول على حصة محددة في وقت ويوم معين
-  const getSessionForSlot = (dayIndex: number, timeStr: string) => {
-    // Match session that starts at this exact slot time, or any session whose start minute falls within this hour
-    const slotHour = parseInt(timeStr.split(':')[0]);
-    return schoolSessions.find(s => {
-      if (s.day !== dayIndex) return false;
-      const [hh] = s.time.split(':');
-      const sHour = parseInt(hh);
-      return sHour === slotHour;
-    });
+  // Return all sessions that start exactly at this minute slot for the given day
+  const getSessionsForSlot = (dayIndex: number, timeStr: string) => {
+    return schoolSessions.filter(s => s.day === dayIndex && (s.time || '').slice(0,5) === timeStr);
+  };
+
+  const formatDisplayTime = (time24?: string) => {
+    if (!time24) return 'غير محدد';
+    const [hhStr, mmStr] = time24.split(':');
+    let hh = parseInt(hhStr || '0', 10);
+    const mm = mmStr || '00';
+    const isPM = hh >= 12;
+    const suffix = isPM ? 'م' : 'ص';
+    hh = hh % 12;
+    if (hh === 0) hh = 12;
+    return `${hh}:${mm} ${suffix}`;
   };
 
   // تحميل بيانات الحصة للتعديل
@@ -265,6 +281,17 @@ const SchoolSchedule: React.FC = () => {
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+          </button>
+
+          <button
+            onClick={() => setRefreshTick(Date.now())}
+            title="تحديث الجدول"
+            className="w-10 h-10 rounded-xl glass-3d flex items-center justify-center text-slate-300 hover:text-blue-400 hover:border-blue-500/30 transition-all"
+          >
+            <img src="/assets/update-icon.png" alt="تحديث" className="h-5 w-5" onError={(e:any)=>{e.currentTarget.style.display='none'}} />
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v6h6M20 20v-6h-6" />
             </svg>
           </button>
 
@@ -421,66 +448,54 @@ const SchoolSchedule: React.FC = () => {
               </thead>
               <tbody>
                 {activeTimeSlots.map(slot => (
-                  <tr key={slot.raw}>
-                    <td className="pr-2 py-1" style={{ paddingRight: `${8 * scheduleZoom}px` }}>
-                      <span className="text-[9px] font-black text-slate-500 whitespace-nowrap block text-center bg-slate-900/50 rounded-lg border border-white/5" style={{ padding: `${4 * scheduleZoom}px ${8 * scheduleZoom}px`, fontSize: `${9 * scheduleZoom}px` }}>
-                        {slot.display}
-                      </span>
-                    </td>
-                    {activeDays.map(day => {
-                      const session = getSessionForSlot(day.index, slot.raw);
-                      return (
-                        <td key={`${day.index}-${slot.raw}`} style={{ height: `${80 * scheduleZoom}px` }}>
-                          <div
-                            onClick={() => session && handleEdit(session)}
-                            className={`w-full h-full rounded-xl transition-all relative ${session ? 'flex flex-col items-center justify-center p-1.5 text-center group cursor-pointer' : 'bg-slate-900/10 border-dashed border-slate-800/30'}`}
-                            style={ session ? { background: 'var(--color-schedule-box)', border: '1px solid rgba(0,0,0,0.18)', boxShadow: '0 6px 18px rgba(0,0,0,0.12)' } : undefined }
-                          >
-                            {session ? (
-                              <>
-                                <span className="text-white font-extrabold truncate w-full" style={{ fontSize: `${14 * scheduleZoom}px`, lineHeight: 1 }}>
-                                  {session.level || session.name}
-                                </span>
-                                <span className="text-[11px] text-purple-200 opacity-90 mt-1 block" style={{ fontSize: `${10 * scheduleZoom}px` }}>
-                                  {session.time} - {session.endTime || 'غير محدد'}
-                                </span>
-                                {session.subject && (
-                                  <span className="text-[10px] text-purple-100 opacity-80 block" style={{ fontSize: `${9 * scheduleZoom}px` }}>
-                                    {session.subject}
-                                  </span>
-                                )}
-                                <span className="text-[9px] mt-1 block" style={{ fontSize: `${8 * scheduleZoom}px`, color: 'rgba(255,255,255,0.9)' }}>
-                                  {session.teacher || teacherProfile?.name || '—'}
-                                </span>
-                                {session.notes && (
-                                  <span className="text-[9px] mt-1 block" style={{ fontSize: `${7 * scheduleZoom}px`, whiteSpace: 'normal', color: '#000', fontWeight: 700 }}>
-                                    {session.notes}
-                                  </span>
-                                )}
-                              </>
-                            ) : null}
-                            
-                            {/* زر الحذف - يظهر عند التمرير */}
-                            {session && (
-                              <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setDeleteConfirmId(session.id);
-                                  }}
-                                  className="w-6 h-6 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center text-white text-[12px] font-black transition-colors"
-                                  title="حذف الحصة"
-                                >
-                                  🗑️
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
+                    <tr key={slot.raw}>
+                      <td className="pr-2 py-1" style={{ paddingRight: `${8 * scheduleZoom}px` }}>
+                        <span className="text-[9px] font-black text-slate-500 whitespace-nowrap block text-center bg-slate-900/50 rounded-lg border border-white/5" style={{ padding: `${4 * scheduleZoom}px ${8 * scheduleZoom}px`, fontSize: `${9 * scheduleZoom}px` }}>
+                          {formatDisplayTime(slot.raw)}
+                        </span>
+                      </td>
+                      {activeDays.map(day => {
+                        const sessions = getSessionsForSlot(day.index, slot.raw);
+                        return (
+                          <td key={`${day.index}-${slot.raw}`} style={{ height: `${80 * scheduleZoom}px` }}>
+                            <div
+                              className={`w-full h-full rounded-xl transition-all relative ${sessions.length ? 'p-1.5 text-center group cursor-default' : 'bg-slate-900/10 border-dashed border-slate-800/30'}`}
+                              style={ sessions.length ? { background: 'var(--color-schedule-box)', border: '1px solid rgba(0,0,0,0.18)', boxShadow: '0 6px 18px rgba(0,0,0,0.12)' } : undefined }
+                            >
+                              {sessions.length ? (
+                                <div className="space-y-1">
+                                  {sessions.map(session => (
+                                    <div key={session.id} onClick={() => handleEdit(session)} className="bg-transparent rounded-md p-1 relative group">
+                                      <div className="flex items-start justify-between gap-2">
+                                        <div className="flex-1 min-w-0">
+                                          <div className="text-white font-extrabold truncate" style={{ fontSize: `${12 * scheduleZoom}px`, lineHeight: 1 }}>
+                                            {session.level || session.name}
+                                          </div>
+                                          <div className="text-[11px] text-purple-200 opacity-90 mt-0" style={{ fontSize: `${9 * scheduleZoom}px` }}>
+                                            {formatDisplayTime(session.time)} - {session.endTime ? formatDisplayTime(session.endTime) : 'غير محدد'}
+                                          </div>
+                                          {session.subject && (
+                                            <div className="text-[10px] text-purple-100 opacity-80" style={{ fontSize: `${8 * scheduleZoom}px` }}>{session.subject}</div>
+                                          )}
+                                          <div className="text-[9px] mt-1" style={{ fontSize: `${8 * scheduleZoom}px`, color: 'rgba(255,255,255,0.9)' }}>{session.teacher || teacherProfile?.name || '—'}</div>
+                                          {session.notes && (
+                                            <div className="text-[9px] mt-1" style={{ fontSize: `${7 * scheduleZoom}px`, whiteSpace: 'normal', color: '#000', fontWeight: 700 }}>{session.notes}</div>
+                                          )}
+                                        </div>
+                                        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-1">
+                                          <button onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(session.id); }} className="w-7 h-7 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center text-white text-[12px] font-black">🗑️</button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : null}
+                            </div>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>

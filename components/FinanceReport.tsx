@@ -6,6 +6,11 @@ const FinanceReport: React.FC = () => {
   const { getFinancialReport, recordPayment, getExpectedMonthlyIncome } = useApp();
   const report = getFinancialReport();
   const monthlyExpected = getExpectedMonthlyIncome();
+  const fmt = (v: any) => {
+    const n = Number(v || 0);
+    if (isNaN(n)) return '0.0';
+    return n.toFixed(1);
+  };
   const [payAmount, setPayAmount] = useState<{[id: string]: number}>({});
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -35,14 +40,14 @@ const FinanceReport: React.FC = () => {
       <div className="grid grid-cols-2 gap-3 px-2">
         <div className="glass-3d p-6 rounded-[2rem] text-center border-blue-500/20">
           <p className="text-[9px] text-blue-500 font-black uppercase mb-1">الدخل المتوقع</p>
-          <h4 className="text-2xl font-black text-white">{monthlyExpected} <span className="text-xs">ج.م</span></h4>
+          <h4 className="text-2xl font-black text-white">{fmt(monthlyExpected)} <span className="text-xs">ج.م</span></h4>
           <p className="text-[9px] text-blue-400 font-bold mt-1">شهري</p>
         </div>
         <div className="glass-3d p-6 rounded-[2rem] text-center border-emerald-500/20">
           <p className="text-[9px] text-emerald-500 font-black uppercase mb-1">المبلغ المحصل</p>
-          <h4 className="text-2xl font-black text-white">{report.totalCollected} <span className="text-xs">ج.م</span></h4>
+          <h4 className="text-2xl font-black text-white">{fmt(report.totalCollected)} <span className="text-xs">ج.م</span></h4>
           <p className="text-[9px] text-emerald-400 font-bold mt-1">
-            {((report.totalCollected / monthlyExpected) * 100).toFixed(0)}%
+            {monthlyExpected ? ((report.totalCollected / monthlyExpected) * 100).toFixed(0) : '0'}%
           </p>
         </div>
       </div>
@@ -50,11 +55,11 @@ const FinanceReport: React.FC = () => {
       <div className="grid grid-cols-2 gap-3 px-2">
         <div className="glass-3d p-6 rounded-[2rem] text-center border-rose-500/20">
           <p className="text-[9px] text-rose-500 font-black uppercase mb-1">المتبقي</p>
-          <h4 className="text-2xl font-black text-white">{monthlyExpected - report.totalCollected} <span className="text-xs">ج.م</span></h4>
+          <h4 className="text-2xl font-black text-white">{fmt(monthlyExpected - report.totalCollected)} <span className="text-xs">ج.م</span></h4>
         </div>
         <div className="glass-3d p-6 rounded-[2rem] text-center border-amber-500/20">
           <p className="text-[9px] text-amber-500 font-black uppercase mb-1">إجمالي المستحق</p>
-          <h4 className="text-2xl font-black text-white">{report.totalExpected} <span className="text-xs">ج.م</span></h4>
+          <h4 className="text-2xl font-black text-white">{fmt(report.totalExpected)} <span className="text-xs">ج.م</span></h4>
         </div>
       </div>
 
@@ -88,7 +93,7 @@ const FinanceReport: React.FC = () => {
                 <div className="flex-1">
                   <h4 className="font-black text-white text-base">{r.student.name}</h4>
                   <p className="text-[10px] text-slate-500 font-bold">
-                    {r.completedSessionsCount} حصص • {r.student.sessionPrice} ج.م/حصة • الشهري: {r.expectedMonthly} ج.م
+                    {r.completedSessionsCount} حصص • {fmt(r.student.sessionPrice)} ج.م/حصة • الشهري: {fmt(r.expectedMonthly)} ج.م
                   </p>
                   {r.student.parentName && (
                     <p className="text-[9px] text-slate-400 font-bold mt-1">ولي الأمر: {r.student.parentName}</p>
@@ -105,20 +110,20 @@ const FinanceReport: React.FC = () => {
               <div className="grid grid-cols-3 gap-2 text-[10px] font-black bg-slate-900/30 p-3 rounded-lg">
                 <div>
                   <p className="text-slate-400">المطلوب</p>
-                  <p className="text-white text-lg">{r.debt}</p>
+                  <p className="text-white text-lg">{fmt(r.debt)}</p>
                 </div>
                 <div>
                   <p className="text-slate-400">المدفوع</p>
-                  <p className="text-emerald-500 text-lg">{r.paid}</p>
+                  <p className="text-emerald-500 text-lg">{fmt(r.paid)}</p>
                 </div>
                 <div>
                   <p className="text-slate-400">المتبقي</p>
-                  <p className="text-rose-500 text-lg">{r.debt - r.paid}</p>
+                  <p className="text-rose-500 text-lg">{fmt(r.debt - r.paid)}</p>
                 </div>
               </div>
 
               {r.debt > r.paid && (
-                <div className="flex gap-2 pt-2 border-t border-white/5">
+                <div className="flex gap-2 pt-2 border-t border-white/5 items-center">
                   <input 
                     type="number" 
                     className="bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white font-bold flex-1 outline-none focus:border-blue-500/50"
@@ -128,7 +133,8 @@ const FinanceReport: React.FC = () => {
                   />
                   <button 
                     onClick={() => handlePay(r.student.id)}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-black shadow-lg transition-all"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-black transition-all"
+                    style={{flexShrink:0}}
                   >
                     تسديد
                   </button>
