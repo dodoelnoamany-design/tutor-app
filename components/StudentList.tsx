@@ -120,8 +120,8 @@ const StudentList: React.FC = () => {
     }
   };
 
-  // sheet (modal) drag state for touch-friendly bottom sheet
-  const [sheetHeight, setSheetHeight] = React.useState<number>(Math.round(window.innerHeight * 0.6));
+  // sheet (modal) drag state for touch-friendly bottom sheet (slightly smaller by default)
+  const [sheetHeight, setSheetHeight] = React.useState<number>(Math.round(window.innerHeight * 0.55));
   const sheetStart = React.useRef<{startY: number, startH: number} | null>(null);
 
   const onSheetTouchStart = (e: React.TouchEvent) => {
@@ -143,9 +143,14 @@ const StudentList: React.FC = () => {
     else setSheetHeight(Math.round(window.innerHeight * 0.75));
   };
 
-  // ensure focused inputs scroll into view on mobile
+  // ensure focused inputs scroll into view on mobile and expand sheet for visibility
   const onInputFocus = (e: React.FocusEvent) => {
-    try { (e.target as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch {}
+    try {
+      // expand sheet to give space for keyboard
+      setSheetHeight(Math.round(window.innerHeight * 0.85));
+      // small delay then scroll into view
+      setTimeout(() => { try { (e.target as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch {} }, 200);
+    } catch {}
   };
 
   return (
@@ -195,13 +200,19 @@ const StudentList: React.FC = () => {
             {expandedId === s.id && (
               <div className="px-5 pb-5 space-y-4 animate-in fade-in zoom-in duration-300">
                 <hr className="border-white/5" />
-                
+
                 <div className="grid grid-cols-2 gap-3">
-                  <input onFocus={onInputFocus} type="text" placeholder="اسم ولي الأمر" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white" value={formData.parentName} onChange={(e) => setFormData({...formData, parentName: e.target.value})} />
-                  <input onFocus={onInputFocus} type="tel" placeholder="رقم ولي الأمر" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white text-right" value={formData.parentPhone} onChange={(e) => setFormData({...formData, parentPhone: e.target.value})} />
-                </div>
-                    <p className="text-[10px] text-blue-400">{s.parentPhone || ''}</p>
+                  <div>
+                    <p className="text-[10px] text-slate-400">اسم ولي الأمر</p>
+                    <p className="text-white font-bold">{s.parentName || '—'}</p>
                   </div>
+                  <div>
+                    <p className="text-[10px] text-slate-400">رقم ولي الأمر</p>
+                    <p className="text-white font-bold">{s.parentPhone || '—'}</p>
+                  </div>
+                </div>
+
+                <div className="mt-2 grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <p className="text-[9px] text-slate-500 font-black uppercase">السن</p>
                     <p className="text-xs text-white font-bold">{s.age ? `${s.age} سنة` : 'غير محدد'}</p>
