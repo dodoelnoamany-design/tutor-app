@@ -153,6 +153,82 @@ const StudentList: React.FC = () => {
     } catch {}
   };
 
+  // helpers to update schedule in form (extracted to avoid complex inline JSX handlers)
+  const toggleDayInForm = (i: number) => {
+    setFormData(prev => {
+      const exists = prev.fixedSchedule.find(fd => fd.day === i);
+      return {
+        ...prev,
+        fixedSchedule: exists ? prev.fixedSchedule.filter(fd => fd.day !== i) : [...prev.fixedSchedule, { day: i, time: '16:00' }]
+      };
+    });
+  };
+
+  const updateFixedTime = (day: number, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      fixedSchedule: prev.fixedSchedule.map(item => item.day === day ? { ...item, time: value } : item)
+    }));
+  };
+
+  const renderModal = () => {
+    return (
+      <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm" onClick={() => setShowModal(false)}>
+        <div className="pointer-events-none w-full h-full">
+          <div onClick={e => e.stopPropagation()} className="pointer-events-auto fixed left-0 right-0 mx-auto rounded-t-[2rem] bg-[#071020] border border-white/10 glass-3d" style={{ maxWidth: 720, height: sheetHeight, bottom: 0 }} onTouchStart={onSheetTouchStart} onTouchMove={onSheetTouchMove} onTouchEnd={onSheetTouchEnd}>
+            <div className="w-full flex items-center justify-center py-2">
+              <div className="w-12 h-1.5 bg-white/20 rounded-full" />
+            </div>
+            <div className="p-5 overflow-auto h-full">
+              <h3 className="text-xl font-black text-white mb-4 text-center">{editingStudent ? 'تعديل طالب' : 'طالب جديد'}</h3>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <input required onFocus={onInputFocus} type="text" placeholder="اسم الطالب (إجباري)" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-white font-bold" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                <input onFocus={onInputFocus} type="date" placeholder="تاريخ بداية الدرس" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white" value={formData.startDate} onChange={e => setFormData({...formData, startDate: e.target.value})} />
+
+                <div className="grid grid-cols-2 gap-3">
+                  <input onFocus={onInputFocus} type="tel" placeholder="رقم الطالب" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white text-right" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+                  <input onFocus={onInputFocus} type="text" placeholder="المستوى" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white" value={formData.level} onChange={e => setFormData({...formData, level: e.target.value})} />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <input type="text" placeholder="اسم ولي الأمر" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white" value={formData.parentName} onChange={e => setFormData({...formData, parentName: e.target.value})} />
+                  <input type="tel" placeholder="رقم ولي الأمر" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white text-right" value={formData.parentPhone} onChange={e => setFormData({...formData, parentPhone: e.target.value})} />
+                </div>
+
+                <input onFocus={onInputFocus} type="number" placeholder="السن" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white text-right" value={formData.age} onChange={e => setFormData({...formData, age: e.target.value})} />
+                
+                <input onFocus={onInputFocus} type="number" placeholder="سعر الشهر (جنيه)" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white text-right" value={formData.monthlyPrice} onChange={e => setFormData({...formData, monthlyPrice: e.target.value})} />
+                <textarea onFocus={onInputFocus} placeholder="ملاحظات..." className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white h-20" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} />
+
+                {/* اختيار المواعيد الثابتة */}
+                <div className="p-4 bg-black/20 rounded-3xl border border-white/5 space-y-4">
+                  <p className="text-[10px] font-black text-blue-400 uppercase text-center">الأيام والساعة</p>
+                  <div className="grid grid-cols-4 gap-2">
+                    {daysAr.map((d, i) => {
+                      const exists = formData.fixedSchedule.find(fd => fd.day === i);
+                      return (
+                        <button key={i} type="button" onClick={() => toggleDayInForm(i)} className={`py-2 rounded-xl text-[9px] font-black transition-all ${exists ? 'bg-blue-600 text-white' : 'bg-slate-900 text-slate-500'}`}>{d}</button>
+                      );
+                    })}
+                  </div>
+                  {formData.fixedSchedule.map(fd => (
+                    <div key={fd.day} className="flex items-center justify-between bg-slate-900/50 p-2 rounded-xl border border-white/5">
+                      <span className="text-[10px] font-bold text-white pr-2">{daysAr[fd.day]}</span>
+                      <input onFocus={onInputFocus} type="time" className={`${theme === 'light' ? 'bg-white text-black' : 'bg-slate-800 text-white'} text-xs p-1.5 rounded-lg outline-none`} value={fd.time} onChange={e => updateFixedTime(fd.day, e.target.value)} />
+                    </div>
+                  ))}
+                </div>
+
+                <button type="submit" className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black shadow-xl active:scale-95 transition-all">حفظ ✅</button>
+                <button type="button" onClick={() => setShowModal(false)} className="w-full text-slate-500 py-2 font-bold text-sm">إلغاء</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-4 page-transition pb-24 px-4 pt-4 text-right" dir="rtl">
       {/* العنوان وزر الإضافة */}
@@ -179,7 +255,8 @@ const StudentList: React.FC = () => {
 
       {/* قائمة الطلاب */}
       <div className="grid gap-3">
-        {filteredStudents.map((s: any, index: number) => (
+        {filteredStudents.map((s: any, index: number) => {
+          return (
           <div key={s.id} className={`glass-3d rounded-[2rem] border transition-all ${expandedId === s.id ? 'border-blue-500/30' : 'border-white/5'}`}>
             <div 
               onClick={() => setExpandedId(expandedId === s.id ? null : s.id)}
@@ -257,70 +334,12 @@ const StudentList: React.FC = () => {
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* مودال الإضافة والتعديل الكامل */}
-      {showModal && (
-        <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm" onClick={() => setShowModal(false)}>
-          <div className="pointer-events-none w-full h-full">
-            <div onClick={e => e.stopPropagation()} className="pointer-events-auto fixed left-0 right-0 mx-auto rounded-t-[2rem] bg-[#071020] border border-white/10 glass-3d" style={{ maxWidth: 720, height: sheetHeight, bottom: 0 }} onTouchStart={onSheetTouchStart} onTouchMove={onSheetTouchMove} onTouchEnd={onSheetTouchEnd}>
-              <div className="w-full flex items-center justify-center py-2">
-                <div className="w-12 h-1.5 bg-white/20 rounded-full" />
-              </div>
-              <div className="p-5 overflow-auto h-full">
-                <h3 className="text-xl font-black text-white mb-4 text-center">{editingStudent ? 'تعديل طالب' : 'طالب جديد'}</h3>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <input required onFocus={onInputFocus} type="text" placeholder="اسم الطالب (إجباري)" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-white font-bold" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
-                  <input onFocus={onInputFocus} type="date" placeholder="تاريخ بداية الدرس" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white" value={formData.startDate} onChange={e => setFormData({...formData, startDate: e.target.value})} />
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <input onFocus={onInputFocus} type="tel" placeholder="رقم الطالب" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white text-right" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
-                    <input onFocus={onInputFocus} type="text" placeholder="المستوى" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white" value={formData.level} onChange={e => setFormData({...formData, level: e.target.value})} />
-                  </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <input type="text" placeholder="اسم ولي الأمر" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white" value={formData.parentName} onChange={e => setFormData({...formData, parentName: e.target.value})} />
-                <input type="tel" placeholder="رقم ولي الأمر" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white text-right" value={formData.parentPhone} onChange={e => setFormData({...formData, parentPhone: e.target.value})} />
-              </div>
-
-              <input onFocus={onInputFocus} type="number" placeholder="السن" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white text-right" value={formData.age} onChange={e => setFormData({...formData, age: e.target.value})} />
-              
-              <input onFocus={onInputFocus} type="number" placeholder="سعر الشهر (جنيه)" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white text-right" value={formData.monthlyPrice} onChange={e => setFormData({...formData, monthlyPrice: e.target.value})} />
-              <textarea onFocus={onInputFocus} placeholder="ملاحظات..." className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white h-20" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} />
-
-              {/* اختيار المواعيد الثابتة */}
-              <div className="p-4 bg-black/20 rounded-3xl border border-white/5 space-y-4">
-                <p className="text-[10px] font-black text-blue-400 uppercase text-center">الأيام والساعة</p>
-                <div className="grid grid-cols-4 gap-2">
-                  {daysAr.map((d, i) => {
-                    const exists = formData.fixedSchedule.find(fd => fd.day === i);
-                    return (
-                      <button key={i} type="button" onClick={() => {
-                        setFormData({
-                          ...formData, 
-                          fixedSchedule: exists 
-                            ? formData.fixedSchedule.filter(fd => fd.day !== i) 
-                            : [...formData.fixedSchedule, {day: i, time: '16:00'}]
-                        });
-                      }} className={`py-2 rounded-xl text-[9px] font-black transition-all ${exists ? 'bg-blue-600 text-white' : 'bg-slate-900 text-slate-500'}`}>{d}</button>
-                    );
-                  })}
-                </div>
-                {formData.fixedSchedule.map(fd => (
-                  <div key={fd.day} className="flex items-center justify-between bg-slate-900/50 p-2 rounded-xl border border-white/5">
-                    <span className="text-[10px] font-bold text-white pr-2">{daysAr[fd.day]}</span>
-                    <input onFocus={onInputFocus} type="time" className={`${theme === 'light' ? 'bg-white text-black' : 'bg-slate-800 text-white'} text-xs p-1.5 rounded-lg outline-none`} value={fd.time} onChange={e => setFormData({...formData, fixedSchedule: formData.fixedSchedule.map(item => item.day === fd.day ? {...item, time: e.target.value} : item)})} />
-                  </div>
-                ))}
-              </div>
-
-              <button type="submit" className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black shadow-xl active:scale-95 transition-all">حفظ ✅</button>
-              <button type="button" onClick={() => setShowModal(false)} className="w-full text-slate-500 py-2 font-bold text-sm">إلغاء</button>
-            </form>
-          </div>
-        </div>
-      )}
+      {showModal && renderModal()}
 
       {/* مودال تعديل الوقت السريع */}
       {quickTimeModal && selectedForQuickTime && (
