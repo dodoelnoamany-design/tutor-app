@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../store';
 import { useSettings } from '../themeStore';
 import { DayTime, Student } from '../types';
@@ -31,6 +31,11 @@ const StudentList: React.FC = () => {
 
   const { theme } = useSettings();
 
+  // refs for inputs to navigate with keyboard 'Next'
+  const inputsRef = useRef<Array<HTMLInputElement | HTMLTextAreaElement | null>>([]);
+  const formScrollRef = useRef<HTMLDivElement | null>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState<number>(0);
+
   // حالات تعديل الوقت السريع
   const [quickTimeModal, setQuickTimeModal] = useState(false);
   const [selectedForQuickTime, setSelectedForQuickTime] = useState<{id: string, day: number, time: string} | null>(null);
@@ -55,7 +60,7 @@ const StudentList: React.FC = () => {
     setEditingStudent(null);
     // if the user already typed something, keep it (don't erase unexpectedly)
     if (!formData.name && !formData.phone && !formData.level && !formData.parentName) {
-      setFormData({ name: '', phone: '', level: '', age: '', parentName: '', parentPhone: '', notes: '', monthlyPrice: '', fixedSchedule: [], startDate: '' });
+      setFormData({ name: '', phone: '', level: '', age: '', parentName: '', parentPhone: '', notes: '', monthlyPrice: '', fixedSchedule: [], startDate: new Date().toISOString().slice(0,10) });
     }
     setShowModal(true);
   };
@@ -148,9 +153,62 @@ const StudentList: React.FC = () => {
     try {
       // expand sheet to give space for keyboard
       setSheetHeight(Math.round(window.innerHeight * 0.85));
+      // ensure focused element is registered
+      const idx = inputsRef.current.findIndex(i => i === e.target);
+      if (idx >= 0) {
+        setTimeout(() => { try { inputsRef.current[idx]?.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch {} }, 200);
+      }
       // small delay then scroll into view
       setTimeout(() => { try { (e.target as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch {} }, 200);
     } catch {}
+  };
+
+  // handle visualViewport / keyboard insets
+  useEffect(() => {
+    const vv = (window as any).visualViewport;
+    const onResize = () => {
+      try {
+        const h = vv ? (window.innerHeight - vv.height - (vv.offsetTop || 0)) : 0;
+        setKeyboardHeight(h > 0 ? Math.max(0, Math.round(h)) : 0);
+        if (h > 0) {
+          setSheetHeight(Math.round(window.innerHeight * 0.85));
+        }
+      } catch (e) {}
+    };
+    if (vv) {
+      vv.addEventListener('resize', onResize);
+      vv.addEventListener('scroll', onResize);
+    } else {
+      window.addEventListener('resize', onResize);
+    }
+    onResize();
+    return () => {
+      if (vv) {
+        vv.removeEventListener('resize', onResize);
+        vv.removeEventListener('scroll', onResize);
+      } else {
+        window.removeEventListener('resize', onResize);
+      }
+    };
+  }, []);
+
+  // backdrop click: if keyboard open then just blur (dismiss keyboard), else close sheet
+  const onBackdropClick = (e?: React.MouseEvent) => {
+    if (keyboardHeight > 0 || (document.activeElement && /input|textarea|select/i.test((document.activeElement as HTMLElement).tagName))) {
+      try { (document.activeElement as HTMLElement)?.blur(); } catch {}
+      return;
+    }
+    setShowModal(false);
+  };
+
+  // helper to focus next input on 'Enter' or Next
+  const focusNext = (index: number) => {
+    const next = inputsRef.current[index + 1];
+    if (next) {
+      try { (next as HTMLElement).focus(); } catch {}
+    } else {
+      try { (inputsRef.current[index] as HTMLElement)?.blur(); } catch {}
+    }
   };
 
   // helpers to update schedule in form (extracted to avoid complex inline JSX handlers)
@@ -173,32 +231,32 @@ const StudentList: React.FC = () => {
 
   const renderModal = () => {
     return (
-      <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm" onClick={() => setShowModal(false)}>
+      <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm" onClick={onBackdropClick}>
         <div className="pointer-events-none w-full h-full">
           <div onClick={e => e.stopPropagation()} className="pointer-events-auto fixed left-0 right-0 mx-auto rounded-t-[2rem] bg-[#071020] border border-white/10 glass-3d" style={{ maxWidth: 720, height: sheetHeight, bottom: 0 }} onTouchStart={onSheetTouchStart} onTouchMove={onSheetTouchMove} onTouchEnd={onSheetTouchEnd}>
             <div className="w-full flex items-center justify-center py-2">
               <div className="w-12 h-1.5 bg-white/20 rounded-full" />
             </div>
-            <div className="p-5 overflow-auto h-full">
+            <div className="p-5 overflow-auto h-full" ref={formScrollRef} style={{ paddingBottom: keyboardHeight + 32 }}>
               <h3 className="text-xl font-black text-white mb-4 text-center">{editingStudent ? 'تعديل طالب' : 'طالب جديد'}</h3>
               <form onSubmit={handleSubmit} className="space-y-4">
-                <input required onFocus={onInputFocus} type="text" placeholder="اسم الطالب (إجباري)" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-white font-bold" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
-                <input onFocus={onInputFocus} type="date" placeholder="تاريخ بداية الدرس" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white" value={formData.startDate} onChange={e => setFormData({...formData, startDate: e.target.value})} />
+                <input ref={el => inputsRef.current[0] = el} required onFocus={onInputFocus} type="text" placeholder="اسم الطالب (إجباري)" enterKeyHint="next" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-white font-bold" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); focusNext(0); } }} />
+                <input ref={el => inputsRef.current[1] = el} onFocus={onInputFocus} type="date" placeholder="تاريخ بداية الدرس" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white" value={formData.startDate} onChange={e => setFormData({...formData, startDate: e.target.value})} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); focusNext(1); } }} />
 
                 <div className="grid grid-cols-2 gap-3">
-                  <input onFocus={onInputFocus} type="tel" placeholder="رقم الطالب" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white text-right" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
-                  <input onFocus={onInputFocus} type="text" placeholder="المستوى" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white" value={formData.level} onChange={e => setFormData({...formData, level: e.target.value})} />
+                  <input ref={el => inputsRef.current[2] = el} onFocus={onInputFocus} type="tel" inputMode="tel" pattern="\d*" placeholder="رقم الطالب" enterKeyHint="next" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white text-right" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); focusNext(2); } }} />
+                  <input ref={el => inputsRef.current[3] = el} onFocus={onInputFocus} type="text" placeholder="المستوى" enterKeyHint="next" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white" value={formData.level} onChange={e => setFormData({...formData, level: e.target.value})} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); focusNext(3); } }} />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <input type="text" placeholder="اسم ولي الأمر" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white" value={formData.parentName} onChange={e => setFormData({...formData, parentName: e.target.value})} />
-                  <input type="tel" placeholder="رقم ولي الأمر" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white text-right" value={formData.parentPhone} onChange={e => setFormData({...formData, parentPhone: e.target.value})} />
+                  <input ref={el => inputsRef.current[4] = el} type="text" placeholder="اسم ولي الأمر" enterKeyHint="next" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white" value={formData.parentName} onChange={e => setFormData({...formData, parentName: e.target.value})} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); focusNext(4); } }} />
+                  <input ref={el => inputsRef.current[5] = el} type="tel" inputMode="tel" pattern="\d*" placeholder="رقم ولي الأمر" enterKeyHint="next" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white text-right" value={formData.parentPhone} onChange={e => setFormData({...formData, parentPhone: e.target.value})} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); focusNext(5); } }} />
                 </div>
 
-                <input onFocus={onInputFocus} type="number" placeholder="السن" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white text-right" value={formData.age} onChange={e => setFormData({...formData, age: e.target.value})} />
+                <input ref={el => inputsRef.current[6] = el} onFocus={onInputFocus} inputMode="numeric" pattern="\d*" type="number" placeholder="السن" enterKeyHint="next" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white text-right" value={formData.age} onChange={e => setFormData({...formData, age: e.target.value})} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); focusNext(6); } }} />
                 
-                <input onFocus={onInputFocus} type="number" placeholder="سعر الشهر (جنيه)" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white text-right" value={formData.monthlyPrice} onChange={e => setFormData({...formData, monthlyPrice: e.target.value})} />
-                <textarea onFocus={onInputFocus} placeholder="ملاحظات..." className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white h-20" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} />
+                <input ref={el => inputsRef.current[7] = el} onFocus={onInputFocus} inputMode="numeric" pattern="\d*" type="number" placeholder="سعر الشهر (جنيه)" enterKeyHint="next" className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white text-right" value={formData.monthlyPrice} onChange={e => setFormData({...formData, monthlyPrice: e.target.value})} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); focusNext(7); } }} />
+                <textarea ref={el => inputsRef.current[8] = el} onFocus={onInputFocus} placeholder="ملاحظات..." className="w-full bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white h-20" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); focusNext(8); } }} />
 
                 {/* اختيار المواعيد الثابتة */}
                 <div className="p-4 bg-black/20 rounded-3xl border border-white/5 space-y-4">
